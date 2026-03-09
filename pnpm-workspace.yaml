@@ -1,0 +1,6 @@
+packages:
+  - .
+  - memelab-backend
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
