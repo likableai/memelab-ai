@@ -102,56 +102,56 @@ export const WalletButton: React.FC = () => {
           <div
             style={{
               position: 'absolute',
-              top: '100%',
-              left: 0,
-              marginTop: 'var(--space-1)',
-              background: 'var(--accent-primary)',
-              border: '1px solid var(--border-opacity-10)',
+              top: 'calc(100% + 6px)',
+              right: 0,
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-2)',
+              padding: 'var(--space-1)',
               zIndex: 50,
-          fontFamily:
-            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              minWidth: 140,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              minWidth: 160,
             }}
           >
+            {/* Network badge row */}
+            <div
+              style={{
+                padding: 'var(--space-2) var(--space-3)',
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--text-secondary)',
+                borderBottom: '1px solid var(--border)',
+                marginBottom: 'var(--space-1)',
+              }}
+            >
+              {getNetworkName()}
+            </div>
             <button
               type="button"
-              onClick={() => {
-                disconnect();
-                setShowMenu(false);
-              }}
+              onClick={() => { disconnect(); setShowMenu(false); }}
               style={{
                 display: 'block',
                 width: '100%',
-                padding: 'var(--space-1) var(--space-2)',
+                padding: 'var(--space-2) var(--space-3)',
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--bg)',
+                color: 'var(--text)',
                 cursor: 'pointer',
                 textAlign: 'left',
+                fontSize: 'var(--font-sm)',
+                borderRadius: 'var(--radius-sm)',
               }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
               Disconnect
             </button>
           </div>
         )}
       </div>
-      {isConnected && address && getNetworkName() && (
-        <div
-          className="text-xs text-center flex items-center justify-center rounded-lg"
-          style={{
-            color: 'var(--text)',
-            fontFamily:
-              "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            padding: 'var(--space-1) var(--space-2)',
-            border: '1px solid var(--border-opacity-10)',
-            backgroundColor: 'var(--bg-opacity-5)',
-          }}
-        >
-          {getNetworkName()}
-        </div>
-      )}
+      {/* Network label intentionally removed — shown in wallet menu only */}
     </div>
   );
 };

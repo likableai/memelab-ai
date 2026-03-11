@@ -171,7 +171,12 @@ export const EvmWalletProvider: React.FC<EvmWalletProviderProps> = ({
   }, []);
 
   useEffect(() => {
-    const ethereum = (typeof window !== 'undefined' && (window as unknown as { ethereum?: { on: (event: string, cb: (...args: unknown[]) => void) => void } }).ethereum) ?? null;
+    const ethereum = (typeof window !== 'undefined' && (window as unknown as {
+      ethereum?: {
+        on: (event: string, cb: (...args: unknown[]) => void) => void;
+        request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      }
+    }).ethereum) ?? null;
     if (!ethereum) return;
 
     const handleAccountsChanged = async (accounts: unknown) => {

@@ -29,7 +29,7 @@ export const UsageSummary: React.FC<UsageSummaryProps> = ({
           color: 'var(--text-opacity-90)',
         }}
       >
-        LIKA used
+        $CLAW used
       </p>
       <p
         className="mt-1 text-lg font-normal"
@@ -44,7 +44,7 @@ export const UsageSummary: React.FC<UsageSummaryProps> = ({
           className="ml-1.5 text-sm"
           style={{ color: 'var(--text-opacity-60)' }}
         >
-          LIKA
+          $CLAW
         </span>
       </p>
       {usdValue > 0 && (

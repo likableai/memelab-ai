@@ -1,39 +1,149 @@
 'use client';
 
+const FOOTER_LINKS = {
+  'AI Tools': [
+    { label: 'Meme Studio', href: '/meme-studio' },
+    { label: 'Image Studio', href: '/image-studio' },
+    { label: 'AI Companion', href: '/companion' },
+  ],
+  Platform: [
+    { label: 'Token Explorer', href: '/explorer' },
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Roadmap', href: '/roadmap' },
+  ],
+};
+
 export const Footer = () => {
   return (
-    <footer className="border-t border-[color:var(--border-opacity-10)] bg-[color:var(--bg-secondary)]">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-4">
-          <div className="md:col-span-2 space-y-2">
-            <h3 className="text-sm font-semibold text-primary">MemeLab AI</h3>
-            <p className="text-xs text-secondary max-w-sm">
-              Create professional memes, GIFs, and video memes with AI-powered tools,
-              premium templates, and one-click exports.
+    <footer
+      style={{
+        borderTop: '1px solid var(--border)',
+        marginTop: 'auto',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: 'var(--space-12) var(--space-6)',
+        }}
+      >
+        {/* Top row */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: 'var(--space-10)',
+            marginBottom: 'var(--space-10)',
+          }}
+        >
+          {/* Brand */}
+          <div style={{ gridColumn: 'span 2' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+              <div
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--gradient-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: '#020617',
+                }}
+              >
+                ML
+              </div>
+              <span style={{ fontWeight: 700, fontSize: 'var(--font-sm)', color: 'var(--text)' }}>
+                MemeLab AI
+              </span>
+            </div>
+            <p
+              style={{
+                fontSize: 'var(--font-sm)',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+                maxWidth: '280px',
+              }}
+            >
+              AI meme creation powered by $LIKA on Solana. Template editing is free — connect your wallet to unlock AI features.
             </p>
           </div>
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-secondary">
-              Create
-            </h4>
-            <ul className="space-y-1 text-xs text-secondary">
-              <li>AI Meme Generator</li>
-              <li>Meme Editor</li>
-              <li>Video Memes</li>
-            </ul>
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-secondary">
-              Company
-            </h4>
-            <ul className="space-y-1 text-xs text-secondary">
-              <li>Roadmap</li>
-              <li>Resources</li>
-            </ul>
-          </div>
+
+          {/* Link columns */}
+          {Object.entries(FOOTER_LINKS).map(([section, links]) => (
+            <div key={section}>
+              <p
+                style={{
+                  fontSize: 'var(--font-xs)',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 'var(--space-4)',
+                }}
+              >
+                {section}
+              </p>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {links.map(({ label, href }) => (
+                  <li key={label}>
+                    <a
+                      href={href}
+                      style={{
+                        fontSize: 'var(--font-sm)',
+                        color: 'var(--text-secondary)',
+                        textDecoration: 'none',
+                        transition: 'color 150ms ease',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+                    >
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="mt-6 flex flex-col gap-2 border-t border-[color:var(--border-opacity-5)] pt-4 text-[11px] text-secondary sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} MemeLab AI. All rights reserved.</span>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'var(--border)', marginBottom: 'var(--space-6)' }} />
+
+        {/* Bottom row */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 'var(--space-4)',
+          }}
+        >
+          <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
+            &copy; {new Date().getFullYear()} MemeLab AI. All rights reserved.
+          </span>
+          <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
+            {['Privacy Policy', 'Terms of Service'].map((label) => (
+              <a
+                key={label}
+                href="#"
+                style={{
+                  fontSize: 'var(--font-xs)',
+                  color: 'var(--text-secondary)',
+                  textDecoration: 'none',
+                  transition: 'color 150ms ease',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

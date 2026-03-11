@@ -141,7 +141,7 @@ export const UsageHistory: React.FC<UsageHistoryProps> = ({
             <tr>
               <th>Date</th>
               <th>Type</th>
-              <th>LIKA</th>
+              <th>$CLAW</th>
               <th>USD</th>
             </tr>
           </thead>
