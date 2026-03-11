@@ -1,22 +1,28 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { EvmWalletProvider } from "@/components/WalletProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeToggle";
 
-const inter = Inter({
-  variable: "--font-inter",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "MemeLab AI — Free Meme Generator, AI Meme Studio",
-  description: "Create professional memes with MemeLab AI. Choose from 1000+ templates, generate AI captions, export in HD — no signup, no watermarks.",
-  keywords: ["meme generator", "AI memes", "free meme maker", "meme templates", "AI image generator", "meme studio"],
-  authors: [{ name: "MemeLab AI" }],
+  title: "MemeClaw AI — AI Meme & Image Studio",
+  description: "Create memes, AI images, and web assets on Solana. Powered by $CLAW.",
+  keywords: ["meme generator", "AI memes", "meme studio", "AI image generator", "solana", "claw", "memeclaw"],
+  authors: [{ name: "MemeClaw AI" }],
   icons: {
     icon: [
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
@@ -34,35 +40,35 @@ export const metadata: Metadata = {
     viewportFit: "cover",
   },
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: dark)", color: "#080B12" },
+    { media: "(prefers-color-scheme: light)", color: "#080B12" },
   ],
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "Likable AI",
+    statusBarStyle: "black-translucent",
+    title: "MemeClaw AI",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
-  type: "website",
-  title: "Likable - AI Trading Companion",
-  description: "Likable is your AI trading companion for voice conversations and market analysis",
+    type: "website",
+    title: "MemeClaw AI — AI Meme & Image Studio",
+    description: "Create memes, AI images, and web assets on Solana. Powered by $CLAW.",
     images: [
       {
-        url: "/companioni.jpg",
+        url: "/memeclaw-og.jpg",
         width: 1200,
         height: 630,
-        alt: "Likable AI voice companion character",
+        alt: "MemeClaw AI — AI meme and image studio on Solana",
       },
     ],
   },
   twitter: {
-  card: "summary_large_image",
-  title: "Likable - AI Trading Companion",
-  description: "Likable is your AI trading companion for voice conversations and market analysis",
-    images: ["/companioni.jpg"],
+    card: "summary_large_image",
+    title: "MemeClaw AI — AI Meme & Image Studio",
+    description: "Create memes, AI images, and web assets on Solana. Powered by $CLAW.",
+    images: ["/memeclaw-og.jpg"],
   },
 };
 
@@ -78,12 +84,12 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Likable AI" />
+        <meta name="apple-mobile-web-app-title" content="MemeClaw AI" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="theme-color" content="#000000" id="theme-color-meta" />
       </head>
       <body
-        className={`${inter.variable} antialiased page-transition`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased page-transition`}
         suppressHydrationWarning
       >
         <ThemeProvider>

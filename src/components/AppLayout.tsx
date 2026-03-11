@@ -1,48 +1,52 @@
 'use client';
 
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode } from 'react';
 import { Navbar } from './Navbar';
 import { MobileNav } from './MobileNav';
 
 interface AppLayoutProps {
   children: ReactNode;
-  onTextChatOpen?: () => void;
-  onSettingsOpen?: () => void;
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({
-  children,
-  onTextChatOpen,
-  onSettingsOpen,
-}) => {
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const update = () => setIsMobile(window.innerWidth < 1024);
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
+/**
+ * AppLayout wraps all public-facing pages.
+ * - Navbar is sticky at the top.
+ * - MobileNav renders a fixed bottom tab bar on small screens.
+ * - No footer — intentional product decision.
+ * - The page body scrolls naturally — no overflow:hidden.
+ */
+export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <div
-      className="flex min-h-dvh w-full flex-col overflow-x-hidden"
-      style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100dvh',
+        width: '100%',
+        backgroundColor: 'var(--bg)',
+        color: 'var(--text)',
+        overflowX: 'hidden',
+      }}
     >
       <Navbar />
-      <main className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
+      {/*
+        Mobile bottom nav is 64px + safe-area-inset-bottom.
+        The inline style handles the dynamic calc. The lg:!pb-0 Tailwind class
+        overrides it at large screens (desktop has no bottom nav).
+      */}
+      <main
+        className="lg:!pb-0"
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
         {children}
       </main>
-      {isMobile && (
-        <MobileNav
-          mobileMenuOpen={mobileMenuOpen}
-          onToggleMenu={() => setMobileMenuOpen((open) => !open)}
-          onSettingsOpen={onSettingsOpen}
-          onTextChatOpen={onTextChatOpen}
-        />
-      )}
+      <MobileNav />
     </div>
   );
 };

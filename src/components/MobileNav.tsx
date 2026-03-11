@@ -1,167 +1,99 @@
 'use client';
 
 import Link from 'next/link';
-import { Map, ImagePlus, LayoutDashboard, Search, Home, ImageIcon, MessageCircle, MoreVertical, Settings as SettingsIcon, Mic } from 'lucide-react';
-import React from 'react';
+import { usePathname } from 'next/navigation';
+import { Home, ImageIcon, Wand2, Bot, Search } from 'lucide-react';
 
-const SIDEBAR_SPACING = 'var(--space-3)';
-const ICON_XL = { width: 'var(--icon-xl)', height: 'var(--icon-xl)' } as const;
+/**
+ * MobileNav — bottom tab bar shown on screens < lg (1024px).
+ * Ordered by priority: Home → Meme Studio → Image Studio → AI Companion → Explorer.
+ * The Navbar desktop drawer handles all secondary navigation (Dashboard, Roadmap, etc.).
+ */
 
-interface MobileNavProps {
-  mobileMenuOpen: boolean;
-  onToggleMenu: () => void;
-  onSettingsOpen?: () => void;
-  onTextChatOpen?: () => void;
-}
+const TABS = [
+  { href: '/', icon: Home, label: 'Home' },
+  { href: '/meme-studio', icon: ImageIcon, label: 'Meme' },
+  { href: '/image-studio', icon: Wand2, label: 'Image AI' },
+  { href: '/companion', icon: Bot, label: 'Companion' },
+  { href: '/explorer', icon: Search, label: 'Explorer' },
+];
 
-export const MobileNav: React.FC<MobileNavProps> = ({
-  mobileMenuOpen,
-  onToggleMenu,
-  onSettingsOpen,
-  onTextChatOpen,
-}) => {
+export const MobileNav = () => {
+  const pathname = usePathname();
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href);
+
   return (
-    <>
-      {mobileMenuOpen && (
-        <div
-          className="fixed left-0 right-0 lg:hidden transition-opacity"
-          style={{
-            bottom: 'max(5rem, calc(5rem + env(safe-area-inset-bottom)))',
-            zIndex: 'calc(var(--z-sidebar) - 1)',
-            backgroundColor: 'var(--bg-secondary)',
-            borderTop: '1px solid var(--border-opacity-10)',
-            borderBottom: '1px solid var(--border-opacity-10)',
-            padding: SIDEBAR_SPACING,
-            boxShadow: '0 -4px 18px rgba(15,23,42,0.9)',
-          }}
-        >
-          <div className="flex flex-col" style={{ gap: 'var(--space-1)' }}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onSettingsOpen?.();
-                onToggleMenu();
-              }}
-              className="nav-link w-full flex items-center rounded-lg text-left cursor-pointer"
-              style={{ gap: SIDEBAR_SPACING, padding: SIDEBAR_SPACING }}
-              aria-label="Settings"
-            >
-              <SettingsIcon className="flex-shrink-0" style={ICON_XL} />
-              <span className="text-sm">Settings</span>
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onTextChatOpen?.();
-                onToggleMenu();
-              }}
-              className="nav-link w-full flex items-center rounded-lg text-left cursor-pointer"
-              style={{ gap: SIDEBAR_SPACING, padding: SIDEBAR_SPACING }}
-              aria-label="Chats"
-            >
-              <MessageCircle className="flex-shrink-0" style={ICON_XL} />
-              <span className="text-sm">Chats</span>
-            </button>
-            <Link
-              href="/roadmap"
-              onClick={onToggleMenu}
-              className="nav-link w-full flex items-center rounded-lg no-underline"
-              style={{ gap: SIDEBAR_SPACING, padding: SIDEBAR_SPACING }}
-              aria-label="Roadmap"
-            >
-              <Map className="flex-shrink-0" style={ICON_XL} />
-              <span className="text-sm">Roadmap</span>
-            </Link>
-            <Link
-              href="/image-studio"
-              onClick={onToggleMenu}
-              className="nav-link w-full flex items-center rounded-lg no-underline"
-              style={{ gap: SIDEBAR_SPACING, padding: SIDEBAR_SPACING }}
-              aria-label="Image Studio"
-            >
-              <ImagePlus className="flex-shrink-0" style={ICON_XL} />
-              <span className="text-sm">Image Studio</span>
-            </Link>
-          </div>
-        </div>
-      )}
-
-      <nav
-        data-mobile-bottom-nav="true"
-        className="fixed bottom-0 left-0 right-0 safe-area-bottom"
+    <nav
+      aria-label="Mobile navigation"
+      className="fixed bottom-0 left-0 right-0 lg:hidden safe-area-bottom"
+      style={{
+        borderTop: '1px solid var(--border)',
+        backgroundColor: 'rgba(13, 27, 46, 0.95)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        zIndex: 30,
+      }}
+    >
+      <div
         style={{
-          borderColor: 'var(--border-opacity-10)',
-          backgroundColor: 'var(--bg-secondary)',
-          zIndex: 'var(--z-sidebar)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          paddingTop: 'var(--space-2)',
+          paddingBottom: 'var(--space-2)',
         }}
       >
-        <div
-          className="flex items-center justify-around"
-          style={{ padding: 'var(--space-3) var(--space-4)' }}
-        >
-          <Link
-            href="/"
-            className="nav-link flex flex-col items-center no-underline rounded-lg p-2"
-            style={{ gap: 'var(--space-1)' }}
-            aria-label="Home"
-          >
-            <Home style={ICON_XL} />
-            <span className="text-xs">Home</span>
-          </Link>
-          <Link
-            href="/dashboard"
-            className="nav-link flex flex-col items-center no-underline rounded-lg p-2"
-            style={{ gap: 'var(--space-1)' }}
-            aria-label="Dashboard"
-          >
-            <LayoutDashboard style={ICON_XL} />
-            <span className="text-xs">Dashboard</span>
-          </Link>
-          <Link
-            href="/explorer"
-            className="nav-link flex flex-col items-center no-underline rounded-lg p-2"
-            style={{ gap: 'var(--space-1)' }}
-            aria-label="Explorer"
-          >
-            <Search style={ICON_XL} />
-            <span className="text-xs">Explorer</span>
-          </Link>
-          <Link
-            href="/meme-studio"
-            className="nav-link flex flex-col items-center no-underline rounded-lg p-2"
-            style={{ gap: 'var(--space-1)' }}
-            aria-label="Meme Studio"
-          >
-            <ImageIcon style={ICON_XL} />
-            <span className="text-xs">Meme</span>
-          </Link>
-          <Link
-            href="/companion"
-            className="nav-link flex flex-col items-center no-underline rounded-lg p-2"
-            style={{ gap: 'var(--space-1)' }}
-            aria-label="AI Companion"
-          >
-            <Mic style={ICON_XL} />
-            <span className="text-xs">AI</span>
-          </Link>
-          <button
-            type="button"
-            onClick={onToggleMenu}
-            className="nav-link flex flex-col items-center cursor-pointer rounded-lg p-2"
-            style={{ gap: 'var(--space-1)' }}
-            aria-label="More: Settings, Chats, Roadmap"
-            aria-expanded={mobileMenuOpen}
-          >
-            <MoreVertical style={ICON_XL} />
-            <span className="text-xs">More</span>
-          </button>
-        </div>
-      </nav>
-    </>
+        {TABS.map(({ href, icon: Icon, label }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-label={label}
+              aria-current={active ? 'page' : undefined}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '3px',
+                padding: 'var(--space-2) var(--space-3)',
+                borderRadius: 'var(--radius-md)',
+                textDecoration: 'none',
+                color: active ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                transition: 'color 150ms ease',
+                minWidth: '52px',
+              }}
+            >
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 'var(--radius-sm)',
+                  background: active ? 'rgba(16,185,129,0.12)' : 'transparent',
+                  transition: 'background 150ms ease',
+                }}
+              >
+                <Icon style={{ width: '18px', height: '18px' }} />
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: active ? 600 : 400,
+                  letterSpacing: '0.01em',
+                  lineHeight: 1,
+                }}
+              >
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 };
-

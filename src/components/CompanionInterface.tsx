@@ -8,11 +8,17 @@ import { VisualizationMode } from './VisualizationToggle';
 import { ConversationTranscript } from './ConversationTranscript';
 import { TextChatDrawer } from './TextChatDrawer';
 import { SettingsDrawer } from './SettingsDrawer';
-import { AppLayout } from './AppLayout';
-import { TokenBalance } from './TokenBalance';
 import { WalletButton } from './WalletButton';
-import { Mic, Square, Loader2, Radio, MessageCircle } from 'lucide-react';
-import { LoadingSpinner } from './LoadingSpinner';
+import {
+  Mic,
+  Square,
+  Loader2,
+  Radio,
+  MessageCircle,
+  Settings,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
 import { VoiceOption } from './VoiceSelectorDropdown';
 import { ModelOption } from './ModelSelectorDropdown';
 
@@ -25,8 +31,9 @@ export const CompanionInterface: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('Ara');
   const [selectedModel, setSelectedModel] = useState<ModelOption>('grok-4-1-fast-non-reasoning');
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
 
-  // Open drawers when navigated with a query flag (used by universal mobile nav).
+  // Handle drawer query params from mobile nav
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -35,36 +42,19 @@ export const CompanionInterface: React.FC = () => {
     if (drawer === 'settings') setIsSettingsOpen(true);
   }, []);
 
-  // Load preferences from localStorage
+  // Persist preferences
   useEffect(() => {
     const savedMode = localStorage.getItem('visualizationMode') as VisualizationMode;
-    if (savedMode === 'character' || savedMode === 'waves') {
-      setVisualizationMode(savedMode);
-    }
-
+    if (savedMode === 'character' || savedMode === 'waves') setVisualizationMode(savedMode);
     const savedVoice = localStorage.getItem('selectedVoice') as VoiceOption;
-    if (savedVoice && ['Ara', 'Rex', 'Sal', 'Eve', 'Leo'].includes(savedVoice)) {
-      setSelectedVoice(savedVoice);
-    }
-
+    if (savedVoice && ['Ara', 'Rex', 'Sal', 'Eve', 'Leo'].includes(savedVoice)) setSelectedVoice(savedVoice);
     const savedModel = localStorage.getItem('selectedModel') as ModelOption;
-    if (savedModel && ['grok-4-1-fast-non-reasoning', 'grok-4-1-fast-reasoning'].includes(savedModel)) {
-      setSelectedModel(savedModel);
-    }
+    if (savedModel) setSelectedModel(savedModel);
   }, []);
 
-  // Save preferences to localStorage
-  useEffect(() => {
-    localStorage.setItem('visualizationMode', visualizationMode);
-  }, [visualizationMode]);
-
-  useEffect(() => {
-    localStorage.setItem('selectedVoice', selectedVoice);
-  }, [selectedVoice]);
-
-  useEffect(() => {
-    localStorage.setItem('selectedModel', selectedModel);
-  }, [selectedModel]);
+  useEffect(() => { localStorage.setItem('visualizationMode', visualizationMode); }, [visualizationMode]);
+  useEffect(() => { localStorage.setItem('selectedVoice', selectedVoice); }, [selectedVoice]);
+  useEffect(() => { localStorage.setItem('selectedModel', selectedModel); }, [selectedModel]);
 
   const {
     state,
@@ -80,38 +70,23 @@ export const CompanionInterface: React.FC = () => {
     voice: selectedVoice,
     model: selectedModel,
     onStateChange: (newState) => {
-      if (newState === 'listening') {
-        setIsListening(true);
-        setErrorMessage(null);
-      } else if (newState === 'idle') {
-        setIsListening(false);
-        setErrorMessage(null);
-      } else if (newState === 'error') {
-        setIsListening(false);
-      }
+      if (newState === 'listening') { setIsListening(true); setErrorMessage(null); }
+      else if (newState === 'idle') { setIsListening(false); setErrorMessage(null); }
+      else if (newState === 'error') setIsListening(false);
     },
-    onTranscript: (text, isUser) => {
-      // Transcripts are automatically added to the transcripts array
-    },
+    onTranscript: () => {},
     onError: (error) => {
-      console.error('Voice companion error:', error);
       setErrorMessage(error);
       setTimeout(() => setErrorMessage(null), 5000);
     },
   });
 
   const handleVoiceToggle = async () => {
-    if (!walletConnected || !address) {
-      return;
-    }
-
+    if (!walletConnected || !address) return;
     if (!isConnected) {
       setErrorMessage(null);
-      try {
-        await startSession();
-      } catch (error: any) {
-        console.error('Failed to start session:', error);
-        setErrorMessage(error?.message || 'Failed to start voice session');
+      try { await startSession(); } catch (err: any) {
+        setErrorMessage(err?.message || 'Failed to start voice session');
       }
     } else if (isListening) {
       stopListening();
@@ -120,189 +95,304 @@ export const CompanionInterface: React.FC = () => {
     }
   };
 
-  const hasConversationStarted = transcripts.length > 0;
+  const hasTranscript = transcripts.length > 0;
+
+  // ── Mic button label/icon
+  const micLabel = (() => {
+    if (state === 'connecting') return { icon: <Loader2 className="animate-spin" style={{ width: 22, height: 22 }} />, text: 'Connecting' };
+    if (isListening) return { icon: <Square style={{ width: 20, height: 20 }} />, text: 'Stop' };
+    if (state === 'processing') return { icon: <Loader2 className="animate-spin" style={{ width: 22, height: 22 }} />, text: 'Processing' };
+    if (state === 'speaking') return { icon: <Radio className="animate-pulse" style={{ width: 20, height: 20 }} />, text: 'Speaking' };
+    if (state === 'error') return { icon: <Mic style={{ width: 20, height: 20 }} />, text: 'Try again' };
+    if (isConnected) return { icon: <Mic style={{ width: 20, height: 20 }} />, text: 'Talk' };
+    return { icon: <Mic style={{ width: 20, height: 20 }} />, text: 'Start' };
+  })();
 
   return (
-    <AppLayout
-      onTextChatOpen={() => setIsTextChatOpen(true)}
-      onSettingsOpen={() => setIsSettingsOpen(true)}
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'var(--bg)',
+        minHeight: 0,
+      }}
     >
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-full">
-        {/* Header - Wallet UI in top right */}
-        <header
-          className="flex items-center justify-end flex-shrink-0"
+      {/* ── Full-canvas orb stage ──────────────────────────────────── */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          padding: '2rem 1.5rem 0',
+        }}
+      >
+        {/* Ambient glow behind orb */}
+        <div
+          aria-hidden="true"
           style={{
-            zIndex: 'var(--z-header)',
-            padding: 'var(--space-4)',
-            gap: 'var(--space-3)',
-            backgroundColor: 'var(--bg)',
-            borderBottom: '1px solid var(--border-opacity-10)',
+            position: 'absolute',
+            width: '480px',
+            height: '480px',
+            borderRadius: '50%',
+            background:
+              state === 'speaking'
+                ? 'radial-gradient(circle, rgba(0,229,160,0.12) 0%, transparent 70%)'
+                : state === 'listening'
+                ? 'radial-gradient(circle, rgba(0,200,255,0.1) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(0,229,160,0.05) 0%, transparent 70%)',
+            transition: 'background 800ms ease',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
+
+        {/* Orb */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <VoiceVisualization
+            mode={visualizationMode}
+            state={state}
+            audioLevel={audioLevel}
+            frequencyData={frequencyData}
+            characterImageUrl="/companioni.jpg"
+          />
+        </div>
+
+        {/* State label */}
+        <p
+          style={{
+            marginTop: '1.5rem',
+            fontSize: '13px',
+            fontWeight: 500,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color:
+              state === 'error'
+                ? 'var(--color-error)'
+                : state === 'idle'
+                ? 'var(--text-secondary)'
+                : 'var(--accent-primary)',
+            transition: 'color 400ms ease',
           }}
         >
-          <div className="flex items-center" style={{ gap: 'var(--space-3)' }}>
-            <TokenBalance />
-            <WalletButton />
-          </div>
-        </header>
+          {state === 'idle' && (walletConnected ? 'Ready' : 'Connect wallet to begin')}
+          {state === 'connecting' && 'Connecting...'}
+          {state === 'listening' && 'Listening'}
+          {state === 'processing' && 'Thinking...'}
+          {state === 'speaking' && 'Speaking'}
+          {state === 'error' && 'Something went wrong'}
+        </p>
 
-        {/* Content Area - reserve space for fixed bottom nav on mobile (safe-area aware) */}
-        <div
-          className="flex-1 overflow-hidden pb-[max(5rem,calc(5rem+env(safe-area-inset-bottom)))] lg:pb-0"
-        >
-          <div className={`h-full flex transition-all duration-500 ${
-          hasConversationStarted 
-            ? 'flex-col lg:flex-row' // Split view when conversation started
-            : 'flex-col items-center justify-center' // Centered view initially
-        }`}>
-          {/* Left Section - Voice Control */}
+        {/* Error toast */}
+        {errorMessage && (
           <div
-            className={`flex-1 flex flex-col items-center justify-center transition-all duration-500 ${
-              hasConversationStarted ? 'border-b lg:border-b-0 lg:border-r' : ''
-            }`}
             style={{
-              padding: 'var(--space-8)',
-              borderColor: hasConversationStarted ? 'var(--border-opacity-10)' : 'transparent',
+              marginTop: '1rem',
+              padding: '0.625rem 1rem',
+              borderRadius: '10px',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.25)',
+              fontSize: '13px',
+              color: '#f87171',
+              maxWidth: '360px',
+              textAlign: 'center',
             }}
           >
-            <div className="w-full max-w-md flex flex-col" style={{ gap: 'var(--space-8)' }}>
-              {/* Voice Visualization */}
-              <VoiceVisualization
-                mode={visualizationMode}
-                state={state}
-                audioLevel={audioLevel}
-                frequencyData={frequencyData}
-                className="w-full"
-                characterImageUrl="/companioni.jpg"
-              />
-
-              {/* Controls */}
-              {walletConnected && address ? (
-                <div className="space-y-4">
-                  <button
-                    onClick={handleVoiceToggle}
-                    disabled={state === 'connecting' || state === 'error'}
-                    className={`w-full rounded-full transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center btn-primary btn-md ${
-                      isListening ? 'btn-danger' : ''
-                    }`}
-                    style={{
-                      gap: 'var(--space-2)',
-                      fontSize: 'var(--font-base)',
-                      boxShadow: isListening ? 'none' : 'var(--shadow-white-sm)',
-                    }}
-                  >
-                    {state === 'connecting' && 'Connecting...'}
-                    {state === 'idle' && isConnected && (
-                      <>
-                        <Radio style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)' }} />
-                        <span>Start Talking</span>
-                      </>
-                    )}
-                    {state === 'idle' && !isConnected && (
-                      <>
-                        <Radio style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)' }} />
-                        <span>Connect Voice</span>
-                      </>
-                    )}
-                    {isListening && (
-                      <>
-                        <Square style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)' }} />
-                        <span>Stop Listening</span>
-                      </>
-                    )}
-                    {state === 'processing' && (
-                      <>
-                        <Loader2 className="animate-spin" style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)' }} />
-                        <span>Processing...</span>
-                      </>
-                    )}
-                    {state === 'speaking' && (
-                      <>
-                        <Radio className="animate-pulse" style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)' }} />
-                        <span>Speaking...</span>
-                      </>
-                    )}
-                    {state === 'error' && 'Error - Try Again'}
-                  </button>
-
-                  {isConnected && (
-                    <button
-                      onClick={closeSession}
-                      className="w-full btn-secondary"
-                      style={{ fontSize: 'var(--font-sm)' }}
-                      aria-label="Disconnect voice session"
-                    >
-                      <Square style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-                      <span>Disconnect</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => setIsTextChatOpen(true)}
-                    className="w-full btn-secondary flex items-center justify-center"
-                    style={{ gap: 'var(--space-2)', fontSize: 'var(--font-sm)' }}
-                    aria-label="Switch to text chat"
-                  >
-                    <MessageCircle style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-                    <span>Switch to text chat</span>
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className="card text-center flex flex-col"
-                  style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-xl)', gap: 'var(--space-4)' }}
-                >
-                  <p className="page-subtitle text-sm">
-                    Connect your wallet to start using the voice companion
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setIsTextChatOpen(true)}
-                    className="text-sm nav-link opacity-80 hover:opacity-100 transition-opacity flex items-center justify-center mx-auto"
-                    style={{ gap: 'var(--space-2)' }}
-                    aria-label="Switch to text chat"
-                  >
-                    <MessageCircle style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-                    <span>Switch to text chat</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Error Message */}
-              {errorMessage && (
-                <div
-                  className="p-4 rounded-xl text-center"
-                  style={{
-                    backgroundColor: 'var(--color-error-bg)',
-                    border: '1px solid var(--color-error)',
-                    fontFamily: "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                  }}
-                >
-                  <p
-                    className="text-sm"
-                    style={{
-                      fontFamily: "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                      color: 'var(--color-error-light)',
-                    }}
-                  >
-                    {errorMessage}
-                  </p>
-                </div>
-              )}
-            </div>
+            {errorMessage}
           </div>
+        )}
 
-          {/* Right Section - Transcript (only show when conversation started) */}
-          {hasConversationStarted && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <ConversationTranscript transcripts={transcripts} />
-            </div>
-          )}
-          </div>
-        </div>
+        {/* Transcript pull-up tab — only visible once conversation started */}
+        {hasTranscript && (
+          <button
+            type="button"
+            onClick={() => setTranscriptOpen((v) => !v)}
+            style={{
+              marginTop: '1.25rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '999px',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-secondary)',
+              fontSize: '12px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+          >
+            {transcriptOpen ? <ChevronDown style={{ width: 13, height: 13 }} /> : <ChevronUp style={{ width: 13, height: 13 }} />}
+            {transcriptOpen ? 'Hide transcript' : `Transcript (${transcripts.length})`}
+          </button>
+        )}
       </div>
 
-      {/* Settings Drawer */}
+      {/* ── Transcript slide-up panel ─────────────────────────────── */}
+      {transcriptOpen && hasTranscript && (
+        <div
+          style={{
+            height: '260px',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg-secondary)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <ConversationTranscript transcripts={transcripts} />
+        </div>
+      )}
+
+      {/* ── Floating control bar ──────────────────────────────────── */}
+      <div
+        style={{
+          flexShrink: 0,
+          padding: '1.25rem 1.5rem',
+          borderTop: '1px solid var(--border-opacity-10)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem',
+          background: 'rgba(2,6,23,0.6)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}
+      >
+        {/* Settings */}
+        <button
+          type="button"
+          onClick={() => setIsSettingsOpen(true)}
+          aria-label="Settings"
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            border: '1px solid var(--border)',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-medium)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
+        >
+          <Settings style={{ width: 17, height: 17 }} />
+        </button>
+
+        {/* Primary mic / action button */}
+        {walletConnected && address ? (
+          <>
+            <button
+              type="button"
+              onClick={handleVoiceToggle}
+              disabled={state === 'connecting' || state === 'error'}
+              aria-label={micLabel.text}
+              style={{
+                width: '68px',
+                height: '68px',
+                borderRadius: '50%',
+                border: 'none',
+                background:
+                  isListening
+                    ? 'rgba(239,68,68,0.9)'
+                    : state === 'speaking' || state === 'processing'
+                    ? 'rgba(0,229,160,0.15)'
+                    : 'var(--accent-primary)',
+                color: isListening || (state !== 'speaking' && state !== 'processing') ? '#020617' : 'var(--accent-primary)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '3px',
+                cursor: state === 'connecting' ? 'wait' : 'pointer',
+                transition: 'all 200ms cubic-bezier(0.16,1,0.3,1)',
+                boxShadow:
+                  isListening
+                    ? '0 0 0 6px rgba(239,68,68,0.2)'
+                    : '0 0 0 1px rgba(0,229,160,0.2), 0 4px 20px rgba(0,229,160,0.25)',
+                flexShrink: 0,
+                opacity: state === 'error' ? 0.5 : 1,
+              }}
+            >
+              {micLabel.icon}
+              <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>
+                {micLabel.text}
+              </span>
+            </button>
+
+            {/* Text chat toggle */}
+            <button
+              type="button"
+              onClick={() => setIsTextChatOpen(true)}
+              aria-label="Text chat"
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-medium)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
+            >
+              <MessageCircle style={{ width: 17, height: 17 }} />
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Wallet connect prompt */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+              <WalletButton />
+              <button
+                type="button"
+                onClick={() => setIsTextChatOpen(true)}
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--text-secondary)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  transition: 'color 150ms ease',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+              >
+                <MessageCircle style={{ width: 13, height: 13 }} />
+                Try text chat instead
+              </button>
+            </div>
+            {/* Placeholder right icon to keep symmetry */}
+            <div style={{ width: 44, height: 44, flexShrink: 0 }} />
+          </>
+        )}
+      </div>
+
+      {/* ── Drawers ───────────────────────────────────────────────── */}
       <SettingsDrawer
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -314,9 +404,7 @@ export const CompanionInterface: React.FC = () => {
         onVisualizationModeChange={setVisualizationMode}
         isSessionActive={isConnected}
       />
-
-      {/* Text Chat Drawer */}
       <TextChatDrawer isOpen={isTextChatOpen} onClose={() => setIsTextChatOpen(false)} />
-    </AppLayout>
+    </div>
   );
 };
