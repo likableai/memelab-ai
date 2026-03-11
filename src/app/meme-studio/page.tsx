@@ -1,5 +1,5 @@
 'use client';
-
+// meme-studio — duplicate block removed
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import {
