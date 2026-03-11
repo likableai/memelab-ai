@@ -1,59 +1,150 @@
 'use client';
 
+const FOOTER_LINKS = {
+  Product: [
+    { label: 'Meme Studio', href: '/meme-studio' },
+    { label: 'AI Studio', href: '/image-studio' },
+    { label: 'Explorer', href: '/explorer' },
+    { label: 'Companion', href: '/companion' },
+  ],
+  Company: [
+    { label: 'Roadmap', href: '/roadmap' },
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Docs', href: '#' },
+    { label: 'Support', href: '#' },
+  ],
+};
+
 export const Footer = () => {
   return (
-    <footer className="border-t mt-auto" style={{ borderColor: 'var(--border)' }}>
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-4">
-          {/* Brand section */}
-          <div className="md:col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
+    <footer
+      style={{
+        borderTop: '1px solid var(--border)',
+        marginTop: 'auto',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: 'var(--space-12) var(--space-6)',
+        }}
+      >
+        {/* Top row */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: 'var(--space-10)',
+            marginBottom: 'var(--space-10)',
+          }}
+        >
+          {/* Brand */}
+          <div style={{ gridColumn: 'span 2' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
               <div
-                className="flex h-8 w-8 items-center justify-center rounded-lg font-bold text-xs"
                 style={{
-                  backgroundImage: 'var(--gradient-primary)',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--gradient-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: 700,
                   color: '#020617',
                 }}
               >
                 ML
               </div>
-              <span className="font-bold text-sm">MemeLab AI</span>
+              <span style={{ fontWeight: 700, fontSize: 'var(--font-sm)', color: 'var(--text)' }}>
+                MemeLab AI
+              </span>
             </div>
-            <p className="text-sm text-body-sm max-w-sm">
-              Free AI-powered meme generator. Create professional memes with templates, GIFs, and video exports—no signup required.
+            <p
+              style={{
+                fontSize: 'var(--font-sm)',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.6,
+                maxWidth: '280px',
+              }}
+            >
+              Free AI-powered meme generator. 1000+ templates, instant exports, no signup required.
             </p>
           </div>
 
-          {/* Product links */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Product</h4>
-            <ul className="space-y-2 text-sm text-body-sm">
-              <li><a href="/meme-studio" className="hover:text-accent transition-colors">Meme Studio</a></li>
-              <li><a href="/image-studio" className="hover:text-accent transition-colors">Image Studio</a></li>
-              <li><a href="/explorer" className="hover:text-accent transition-colors">Explorer</a></li>
-            </ul>
-          </div>
-
-          {/* Company links */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Company</h4>
-            <ul className="space-y-2 text-sm text-body-sm">
-              <li><a href="/roadmap" className="hover:text-accent transition-colors">Roadmap</a></li>
-              <li><a href="#" className="hover:text-accent transition-colors">Docs</a></li>
-              <li><a href="#" className="hover:text-accent transition-colors">Support</a></li>
-            </ul>
-          </div>
+          {/* Link columns */}
+          {Object.entries(FOOTER_LINKS).map(([section, links]) => (
+            <div key={section}>
+              <p
+                style={{
+                  fontSize: 'var(--font-xs)',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  marginBottom: 'var(--space-4)',
+                }}
+              >
+                {section}
+              </p>
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                {links.map(({ label, href }) => (
+                  <li key={label}>
+                    <a
+                      href={href}
+                      style={{
+                        fontSize: 'var(--font-sm)',
+                        color: 'var(--text-secondary)',
+                        textDecoration: 'none',
+                        transition: 'color 150ms ease',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+                    >
+                      {label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Divider */}
-        <div style={{ height: '1px', background: 'var(--border)', margin: 'var(--space-6) 0' }} />
+        <div style={{ height: '1px', background: 'var(--border)', marginBottom: 'var(--space-6)' }} />
 
-        {/* Bottom */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-xs text-body-sm">
-          <span>© {new Date().getFullYear()} MemeLab AI. All rights reserved.</span>
-          <div className="flex gap-4">
-            <a href="#" className="hover:text-accent transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-accent transition-colors">Terms of Service</a>
+        {/* Bottom row */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 'var(--space-4)',
+          }}
+        >
+          <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
+            &copy; {new Date().getFullYear()} MemeLab AI. All rights reserved.
+          </span>
+          <div style={{ display: 'flex', gap: 'var(--space-6)' }}>
+            {['Privacy Policy', 'Terms of Service'].map((label) => (
+              <a
+                key={label}
+                href="#"
+                style={{
+                  fontSize: 'var(--font-xs)',
+                  color: 'var(--text-secondary)',
+                  textDecoration: 'none',
+                  transition: 'color 150ms ease',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+              >
+                {label}
+              </a>
+            ))}
           </div>
         </div>
       </div>

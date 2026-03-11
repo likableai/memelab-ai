@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useEvmWallet } from '@/components/WalletProvider';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 import { UsageSummary } from '@/components/UsageSummary';
@@ -122,10 +121,29 @@ export default function DashboardPage() {
   if (!isConnected || !address) {
     return (
       <AppLayout>
-        <div className="container-padding flex flex-col items-center justify-center page-title-area" style={{ minHeight: '60vh' }}>
-          <h1 className="page-title mb-4">Dashboard</h1>
-          <p className="page-subtitle mb-6 text-center max-w-md" style={{ color: 'var(--text-opacity-70)' }}>
-            Connect wallet to view balance and top up.
+        <div
+          style={{
+            minHeight: '60vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'var(--space-12) var(--space-6)',
+            textAlign: 'center',
+          }}
+        >
+          <h1
+            style={{
+              fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              marginBottom: 'var(--space-3)',
+            }}
+          >
+            Dashboard
+          </h1>
+          <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-6)', maxWidth: '400px', lineHeight: 1.6 }}>
+            Connect your wallet to view your $LIKA balance, usage history, and top up.
           </p>
           <WalletButton />
         </div>
@@ -139,121 +157,204 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container-padding mx-auto" style={{ maxWidth: 'var(--content-max-width)' }}>
-        {/* Header Section */}
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between section-spacing" style={{ gap: 'var(--space-4)' }}>
-          <h1 className="page-title">Dashboard</h1>
-          <div className="flex items-center gap-3" style={{ gap: 'var(--space-3)' }}>
+      <div
+        style={{
+          maxWidth: '900px',
+          margin: '0 auto',
+          padding: 'var(--space-12) var(--space-6)',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 'var(--space-4)',
+            marginBottom: 'var(--space-8)',
+          }}
+        >
+          <div>
+            <p
+              style={{
+                fontSize: 'var(--font-xs)',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--accent-primary)',
+                marginBottom: 'var(--space-2)',
+              }}
+            >
+              Account
+            </p>
+            <h1
+              style={{
+                fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+              }}
+            >
+              Dashboard
+            </h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <WalletButton />
             <button
               onClick={() => setRefreshTrigger((n) => n + 1)}
               disabled={loading}
-              className="btn-secondary btn-sm flex items-center gap-2"
-              style={{ gap: 'var(--space-2)' }}
               aria-label="Refresh data"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                padding: 'var(--space-2) var(--space-4)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                fontSize: 'var(--font-sm)',
+                fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.5 : 1,
+                transition: 'all 150ms ease',
+              }}
             >
-              <RefreshCw className={loading ? 'animate-spin' : ''} style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
+              <RefreshCw className={loading ? 'animate-spin' : ''} style={{ width: '16px', height: '16px' }} />
               Refresh
             </button>
           </div>
-        </header>
+        </div>
 
-        {/* Balance Cards Section */}
-        <section className="grid gap-6 md:grid-cols-2 section-spacing" style={{ gap: 'var(--space-6)' }}>
-          <div className="card">
-            <h3 className="section-title mb-2">Balance</h3>
+        {/* Balance Cards */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+            gap: 'var(--space-4)',
+            marginBottom: 'var(--space-8)',
+          }}
+        >
+          {/* Balance */}
+          <div
+            style={{
+              padding: 'var(--space-6)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-secondary)',
+            }}
+          >
+            <p style={{ fontSize: 'var(--font-xs)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
+              Balance
+            </p>
             {loading && !balance ? (
-              <p style={{ color: 'var(--text-opacity-60)' }}>Loading…</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-sm)' }}>Loading…</p>
             ) : balance ? (
               <>
-                <p 
-                  className="text-lg font-normal"
-                  style={{ color: 'var(--text)' }}
-                >
-                  {balance.currentBalance.toFixed(2)}{' '}
-                  <span 
-                    className="text-sm"
-                    style={{ color: 'var(--text-opacity-60)' }}
-                  >
-                    LIKA
-                  </span>
+                <p style={{ fontSize: 'var(--font-3xl)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                  {balance.currentBalance.toFixed(2)}
+                  <span style={{ fontSize: 'var(--font-sm)', fontWeight: 400, color: 'var(--text-secondary)', marginLeft: 'var(--space-2)' }}>LIKA</span>
                 </p>
-                <p 
-                  className="mt-0.5 text-sm"
-                  style={{ color: canAccess ? 'var(--text-opacity-60)' : 'var(--accent)' }}
-                >
-                  ≈ ${usdValue.toFixed(2)}
-                  {!canAccess && ` (min $${minUsd} to use chat/voice)`}
+                <p style={{ fontSize: 'var(--font-sm)', color: canAccess ? 'var(--text-secondary)' : 'var(--accent-primary)', marginTop: 'var(--space-2)' }}>
+                  {canAccess ? `≈ $${usdValue.toFixed(2)}` : `Min $${minUsd} required to use chat/voice`}
                 </p>
-                <p 
-                  className="mt-2 text-xs"
-                  style={{ color: 'var(--text-opacity-50)' }}
-                >
+                <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginTop: 'var(--space-2)', opacity: 0.7 }}>
                   Deposited: {balance.depositedAmount.toFixed(2)} LIKA
                 </p>
               </>
             ) : (
-              <p style={{ color: 'var(--text-opacity-60)' }}>—</p>
+              <p style={{ color: 'var(--text-secondary)' }}>—</p>
             )}
           </div>
+
+          {/* Usage */}
           {balance && (
             <UsageSummary
               consumedAmount={balance.consumedAmount}
               tokenPrice={tokenPrice}
             />
           )}
-        </section>
+        </div>
 
-        {/* Usage History Section */}
-        <section className="section-spacing">
+        {/* Usage History */}
+        <div style={{ marginBottom: 'var(--space-8)' }}>
           <UsageHistory walletAddress={address} limit={50} />
-        </section>
+        </div>
 
-        {/* Top Up Section */}
-        <section>
+        {/* Top-up + Auto-detect */}
+        <div>
           <div
-            className="card mb-4 flex flex-wrap items-center gap-4"
-            style={{ padding: 'var(--space-3) var(--space-4)', gap: 'var(--space-4)' }}
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 'var(--space-4)',
+              padding: 'var(--space-4)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-secondary)',
+              marginBottom: 'var(--space-4)',
+            }}
           >
-            <label className="flex items-center gap-2 cursor-pointer text-primary" style={{ gap: 'var(--space-2)', color: 'var(--text-opacity-90)' }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                cursor: 'pointer',
+                fontSize: 'var(--font-sm)',
+                color: 'var(--text)',
+                fontWeight: 500,
+              }}
+            >
               <input
                 type="checkbox"
                 checked={autoDetect}
                 onChange={(e) => handleAutoDetectChange(e.target.checked)}
-                className="rounded input"
-                style={{ borderColor: 'var(--border-opacity-20)', backgroundColor: 'var(--bg-opacity-5)' }}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  accentColor: 'var(--accent-primary)',
+                  cursor: 'pointer',
+                }}
                 aria-label="Auto-detect deposits"
               />
-              <span className="section-title text-sm">Auto-detect</span>
+              Auto-detect deposits
             </label>
             <button
               type="button"
               onClick={() => runScan()}
               disabled={scanning}
-              className="btn-secondary flex items-center gap-2 text-sm"
-              style={{ gap: 'var(--space-2)' }}
               aria-label="Scan for deposits"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                padding: 'var(--space-2) var(--space-4)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                fontSize: 'var(--font-sm)',
+                fontWeight: 500,
+                cursor: scanning ? 'not-allowed' : 'pointer',
+                opacity: scanning ? 0.5 : 1,
+              }}
             >
               {scanning ? (
-                <Loader2 className="animate-spin" style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
+                <Loader2 className="animate-spin" style={{ width: '16px', height: '16px' }} />
               ) : (
-                <Search style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
+                <Search style={{ width: '16px', height: '16px' }} />
               )}
-              Scan
+              Scan deposits
             </button>
           </div>
           <TopUpForm
             walletAddress={address}
             onSuccess={handleTopUpSuccess}
           />
-        </section>
-
-        {/* Footer Navigation */}
-        <footer className="text-center section-spacing">
-          <Link href="/" className="text-muted text-sm transition-colors hover:text-primary">
-            Back to voice companion
-          </Link>
-        </footer>
+        </div>
       </div>
     </AppLayout>
   );

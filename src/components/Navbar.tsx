@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { WalletButton } from './WalletButton';
-import { Sparkles } from 'lucide-react';
 
 const NAV_LINKS = [
   { label: 'Create', href: '/meme-studio' },
@@ -17,47 +16,90 @@ export const Navbar = () => {
 
   return (
     <header
-      className="sticky top-0 z-40 w-full"
       style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        width: '100%',
         borderBottom: '1px solid var(--border)',
-        backgroundColor: 'var(--bg-secondary)',
+        background: 'rgba(2, 6, 23, 0.85)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-8">
-
-        {/* Left — brand */}
+      <div
+        style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 'var(--space-4) var(--space-6)',
+          gap: 'var(--space-6)',
+        }}
+      >
+        {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 no-underline shrink-0 transition-transform hover:scale-105"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-2)',
+            textDecoration: 'none',
+            flexShrink: 0,
+          }}
         >
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg font-bold text-sm tracking-tight shadow-md"
             style={{
-              backgroundImage: 'var(--gradient-primary)',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--gradient-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 'var(--font-xs)',
+              fontWeight: 700,
               color: '#020617',
+              letterSpacing: '0.02em',
             }}
           >
             ML
           </div>
-          <span className="hidden font-bold text-sm md:block text-heading-sm" style={{ color: 'var(--text)' }}>
+          <span
+            style={{
+              fontWeight: 700,
+              fontSize: 'var(--font-sm)',
+              color: 'var(--text)',
+              display: 'none',
+            }}
+            className="md:block"
+          >
             MemeLab<span style={{ color: 'var(--accent-primary)' }}> AI</span>
           </span>
         </Link>
 
-        {/* Center — nav links (desktop) */}
-        <nav className="hidden lg:flex items-center gap-0.5">
+        {/* Center nav */}
+        <nav
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}
+          className="hidden lg:flex"
+        >
           {NAV_LINKS.map(({ label, href }) => {
             const active = pathname === href || (href !== '/' && pathname.startsWith(href));
             return (
               <Link
                 key={href}
                 href={href}
-                className="rounded-lg px-3.5 py-2 text-sm font-medium transition-all duration-200"
                 style={{
-                  color: active ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                  backgroundColor: active ? 'rgba(16,185,129,0.12)' : 'transparent',
+                  padding: 'var(--space-2) var(--space-3)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: 'var(--font-sm)',
+                  fontWeight: 500,
+                  color: active ? 'var(--text)' : 'var(--text-secondary)',
+                  background: active ? 'var(--bg-hover)' : 'transparent',
+                  textDecoration: 'none',
+                  transition: 'all 150ms ease',
+                  borderBottom: active ? '1px solid var(--accent-primary)' : '1px solid transparent',
                 }}
               >
                 {label}
@@ -66,18 +108,31 @@ export const Navbar = () => {
           })}
         </nav>
 
-        {/* Right — wallet + CTA */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
           <div className="hidden md:flex">
             <WalletButton />
           </div>
           <Link
             href="/companion"
-            className="btn-base btn-primary-solid btn-sm gap-1.5 rounded-lg"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'var(--space-2) var(--space-4)',
+              background: 'white',
+              color: '#020617',
+              borderRadius: 'var(--radius-full)',
+              fontSize: 'var(--font-xs)',
+              fontWeight: 600,
+              textDecoration: 'none',
+              letterSpacing: '0.01em',
+              transition: 'opacity 150ms ease',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.85'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
           >
-            <Sparkles className="icon-sm" />
-            <span className="hidden sm:inline">Try AI</span>
-            <span className="sm:hidden">AI</span>
+            Try AI
           </Link>
         </div>
       </div>

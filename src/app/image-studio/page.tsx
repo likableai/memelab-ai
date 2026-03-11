@@ -260,57 +260,96 @@ export default function ImageStudioPage() {
   return (
     <AppLayout>
       <div
-        className="container-padding mx-auto flex flex-col"
-        style={{ maxWidth: 'var(--content-max-width)', paddingBottom: 'var(--space-12)' }}
+        style={{
+          maxWidth: '900px',
+          margin: '0 auto',
+          padding: 'var(--space-12) var(--space-6)',
+          paddingBottom: 'var(--space-16)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
       >
-        <h1 className="page-title mb-2 tracking-tight">
-          <span className="text-accent">Image Studio</span>
-        </h1>
-        <p className="mb-6" style={{ color: 'var(--text-opacity-70)' }}>
-          Generate avatars, logos, and memes with Gemini. Replicate into famous meme patterns with ReVe. Or use Memelord for prompt-to-meme and video memes.
-        </p>
+        {/* Header */}
+        <div style={{ marginBottom: 'var(--space-8)' }}>
+          <p
+            style={{
+              fontSize: 'var(--font-xs)',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--accent-primary)',
+              marginBottom: 'var(--space-3)',
+            }}
+          >
+            AI Generation
+          </p>
+          <h1
+            style={{
+              fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              marginBottom: 'var(--space-2)',
+              lineHeight: 1.15,
+            }}
+          >
+            Image Studio
+          </h1>
+          <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Generate avatars, logos, and memes with Gemini. Replicate into meme patterns with ReVe. Or use Memelord for prompt-to-meme and video memes.
+          </p>
+        </div>
 
+        {/* Mode switcher for meme tab */}
         {activeTab === 'meme' && (
-          <div className="flex gap-2 mb-4">
-            <span className="text-sm font-medium" style={{ color: 'var(--text-opacity-70)' }}>Source:</span>
-            <button
-              type="button"
-              onClick={() => { setMemeSource('gemini-reve'); setMemelordResults([]); }}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${memeSource === 'gemini-reve' ? 'border-accent' : ''}`}
-              style={{
-                borderColor: memeSource === 'gemini-reve' ? 'var(--accent)' : 'var(--border-opacity-20)',
-                backgroundColor: memeSource === 'gemini-reve' ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'var(--bg)',
-              }}
-            >
-              Create & Remix (Gemini + ReVe)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMemeSource('memelord'); setGeneratedUrl(null); setSelectedImageBase64(null); setRemixResults([]); }}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${memeSource === 'memelord' ? 'border-accent' : ''}`}
-              style={{
-                borderColor: memeSource === 'memelord' ? 'var(--accent)' : 'var(--border-opacity-20)',
-                backgroundColor: memeSource === 'memelord' ? 'color-mix(in srgb, var(--accent) 15%, transparent)' : 'var(--bg)',
-              }}
-            >
-              Prompt-to-Meme (Memelord)
-            </button>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Source:</span>
+            {(['gemini-reve', 'memelord'] as const).map((src) => (
+              <button
+                key={src}
+                type="button"
+                onClick={() => {
+                  if (src === 'gemini-reve') { setMemeSource('gemini-reve'); setMemelordResults([]); }
+                  else { setMemeSource('memelord'); setGeneratedUrl(null); setSelectedImageBase64(null); setRemixResults([]); }
+                }}
+                style={{
+                  padding: 'var(--space-2) var(--space-3)',
+                  border: `1px solid ${memeSource === src ? 'var(--accent-primary)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  background: memeSource === src ? 'rgba(16,185,129,0.12)' : 'transparent',
+                  color: memeSource === src ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                  fontSize: 'var(--font-sm)',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 150ms ease',
+                }}
+              >
+                {src === 'gemini-reve' ? 'Gemini + ReVe' : 'Memelord'}
+              </button>
+            ))}
           </div>
         )}
 
-        <div
-          className="flex gap-2 mb-6 border-b"
-          style={{ borderColor: 'var(--border-opacity-10)' }}
-        >
+        {/* Tab bar */}
+        <div style={{ display: 'flex', gap: 'var(--space-1)', borderBottom: '1px solid var(--border)', marginBottom: 'var(--space-6)' }}>
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className="nav-link flex items-center gap-2 px-4 py-2 rounded-t-lg border-b-2 -mb-px transition-colors"
               style={{
-                borderColor: activeTab === t.id ? 'var(--accent)' : 'transparent',
-                backgroundColor: activeTab === t.id ? 'var(--bg-secondary)' : 'transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+                padding: 'var(--space-2) var(--space-4)',
+                borderRadius: '0',
+                borderBottom: `2px solid ${activeTab === t.id ? 'var(--accent-primary)' : 'transparent'}`,
+                marginBottom: '-1px',
+                background: 'transparent',
+                color: activeTab === t.id ? 'var(--text)' : 'var(--text-secondary)',
+                fontSize: 'var(--font-sm)',
+                fontWeight: activeTab === t.id ? 600 : 400,
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
               }}
             >
               {t.icon}
@@ -319,14 +358,20 @@ export default function ImageStudioPage() {
           ))}
         </div>
 
+        {/* Prompt input */}
         <div
-          className="rounded-lg border p-4 mb-6"
           style={{
-            borderColor: 'var(--border-opacity-10)',
-            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--bg-secondary)',
+            padding: 'var(--space-5)',
+            marginBottom: 'var(--space-6)',
           }}
         >
-          <label className="block text-sm font-medium mb-2" htmlFor="prompt">
+          <label
+            htmlFor="prompt"
+            style={{ display: 'block', fontSize: 'var(--font-xs)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}
+          >
             Prompt
           </label>
           <textarea
@@ -341,28 +386,48 @@ export default function ImageStudioPage() {
                   : 'e.g. Doge celebrating a moon mission'
             }
             rows={3}
-            className="w-full rounded-lg border px-3 py-2 text-sm resize-none"
             style={{
-              borderColor: 'var(--border-opacity-20)',
-              backgroundColor: 'var(--bg)',
+              width: '100%',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)',
+              padding: 'var(--space-3)',
+              fontSize: 'var(--font-sm)',
+              background: 'var(--bg)',
               color: 'var(--text)',
+              resize: 'none',
+              outline: 'none',
+              lineHeight: 1.6,
             }}
           />
           <button
             type="button"
             onClick={handleGenerate}
             disabled={loading || memelordLoading || !prompt.trim()}
-            className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg font-medium disabled:opacity-50"
-            style={{ backgroundColor: 'var(--accent)', color: 'var(--bg)' }}
+            style={{
+              marginTop: 'var(--space-4)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              padding: 'var(--space-3) var(--space-5)',
+              background: 'white',
+              color: '#020617',
+              borderRadius: 'var(--radius-md)',
+              fontSize: 'var(--font-sm)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              opacity: (loading || memelordLoading || !prompt.trim()) ? 0.5 : 1,
+              transition: 'opacity 150ms ease',
+            }}
           >
             {(loading || memelordLoading) ? (
               <>
-                <Loader2 className="animate-spin" style={{ width: 18, height: 18 }} />
+                <Loader2 className="animate-spin" style={{ width: 16, height: 16 }} />
                 {activeTab === 'meme' && memeSource === 'memelord' ? 'Generating Meme...' : 'Generating...'}
               </>
             ) : (
               <>
-                <ImagePlus style={{ width: 18, height: 18 }} />
+                <ImagePlus style={{ width: 16, height: 16 }} />
                 {activeTab === 'meme' && memeSource === 'memelord' ? 'Generate Meme' : 'Generate'}
               </>
             )}
@@ -371,8 +436,15 @@ export default function ImageStudioPage() {
 
         {error && (
           <div
-            className="mb-6 p-4 rounded-lg"
-            style={{ backgroundColor: 'var(--error-bg)', color: 'var(--error)' }}
+            style={{
+              marginBottom: 'var(--space-4)',
+              padding: 'var(--space-4)',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#fca5a5',
+              fontSize: 'var(--font-sm)',
+            }}
           >
             {error}
           </div>
@@ -380,24 +452,27 @@ export default function ImageStudioPage() {
 
         {memelordResults.length > 0 && (
           <div
-            className="rounded-lg border p-4 mb-6"
             style={{
-              borderColor: 'var(--border-opacity-10)',
-              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-secondary)',
+              padding: 'var(--space-5)',
+              marginBottom: 'var(--space-5)',
             }}
           >
-            <h3 className="text-sm font-medium mb-3">Memelord Results</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <p style={{ fontSize: 'var(--font-xs)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
+              Memelord Results
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 'var(--space-4)' }}>
               {memelordResults.map((r, i) => (
-                <div key={i} className="flex flex-col">
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                   <img
                     src={r.url}
                     alt={r.template_name ?? 'Meme'}
-                    className="rounded-lg w-full aspect-square object-cover border"
-                    style={{ borderColor: 'var(--border-opacity-10)' }}
+                    style={{ borderRadius: 'var(--radius-md)', width: '100%', aspectRatio: '1', objectFit: 'cover', border: '1px solid var(--border)' }}
                   />
                   {r.template_name && (
-                    <span className="text-xs mt-1 truncate" style={{ color: 'var(--text-opacity-70)' }}>
+                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {r.template_name}
                     </span>
                   )}
@@ -406,9 +481,9 @@ export default function ImageStudioPage() {
                     download={`memelord-${i}.png`}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2 flex items-center gap-1 text-sm nav-link"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--font-xs)', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 500 }}
                   >
-                    <Download style={{ width: 14, height: 14 }} />
+                    <Download style={{ width: 12, height: 12 }} />
                     Download
                   </a>
                 </div>
@@ -419,28 +494,43 @@ export default function ImageStudioPage() {
 
         {resolvedGeneratedUrl && (
           <div
-            className="rounded-lg border p-4 mb-6"
             style={{
-              borderColor: 'var(--border-opacity-10)',
-              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-secondary)',
+              padding: 'var(--space-5)',
+              marginBottom: 'var(--space-5)',
             }}
           >
-            <h3 className="text-sm font-medium mb-3">Generated Image</h3>
-            <div className="flex flex-wrap gap-4 items-start">
+            <p style={{ fontSize: 'var(--font-xs)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
+              Generated Image
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'flex-start' }}>
               <img
                 src={resolvedGeneratedUrl}
                 alt="Generated"
-                className="rounded-lg max-w-xs max-h-64 object-contain border"
-                style={{ borderColor: 'var(--border-opacity-10)' }}
+                style={{ borderRadius: 'var(--radius-md)', maxWidth: '280px', maxHeight: '280px', objectFit: 'contain', border: '1px solid var(--border)' }}
               />
-              <div className="flex flex-col gap-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                 <a
                   href={resolvedGeneratedUrl}
                   download="image-studio.png"
                   target="_blank"
                   rel="noreferrer"
-                  className="nav-link flex items-center gap-2 px-3 py-2 rounded-lg w-fit"
-                  style={{ backgroundColor: 'var(--bg)' }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-2)',
+                    padding: 'var(--space-2) var(--space-4)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'transparent',
+                    color: 'var(--text)',
+                    fontSize: 'var(--font-sm)',
+                    fontWeight: 500,
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                  }}
                 >
                   <Download style={{ width: 16, height: 16 }} />
                   Download
@@ -449,8 +539,19 @@ export default function ImageStudioPage() {
                   <button
                     type="button"
                     onClick={handleSelectForRemix}
-                    className="nav-link flex items-center gap-2 px-3 py-2 rounded-lg w-fit"
-                    style={{ backgroundColor: 'var(--bg)' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 'var(--space-2)',
+                      padding: 'var(--space-2) var(--space-4)',
+                      border: '1px solid rgba(16,185,129,0.3)',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(16,185,129,0.08)',
+                      color: 'var(--accent-primary)',
+                      fontSize: 'var(--font-sm)',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                    }}
                   >
                     <Check style={{ width: 16, height: 16 }} />
                     Use for Meme Remix
