@@ -1,17 +1,15 @@
 'use client';
 
 const FOOTER_LINKS = {
-  Product: [
+  'AI Tools': [
     { label: 'Meme Studio', href: '/meme-studio' },
-    { label: 'AI Studio', href: '/image-studio' },
-    { label: 'Explorer', href: '/explorer' },
-    { label: 'Companion', href: '/companion' },
+    { label: 'Image Studio', href: '/image-studio' },
+    { label: 'AI Companion', href: '/companion' },
   ],
-  Company: [
-    { label: 'Roadmap', href: '/roadmap' },
+  Platform: [
+    { label: 'Token Explorer', href: '/explorer' },
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Docs', href: '#' },
-    { label: 'Support', href: '#' },
+    { label: 'Roadmap', href: '/roadmap' },
   ],
 };
 
@@ -70,7 +68,7 @@ export const Footer = () => {
                 maxWidth: '280px',
               }}
             >
-              Free AI-powered meme generator. 1000+ templates, instant exports, no signup required.
+              AI meme creation powered by $LIKA on Solana. Template editing is free — connect your wallet to unlock AI features.
             </p>
           </div>
 

@@ -13,9 +13,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MemeLab AI — Free Meme Generator, AI Meme Studio",
-  description: "Create professional memes with MemeLab AI. Choose from 1000+ templates, generate AI captions, export in HD — no signup, no watermarks.",
-  keywords: ["meme generator", "AI memes", "free meme maker", "meme templates", "AI image generator", "meme studio"],
+  title: "MemeLab AI — AI Meme Generator & Studio",
+  description: "Create memes with AI on Solana. AI image generation, curated templates, voice companion. Powered by $LIKA.",
+  keywords: ["meme generator", "AI memes", "meme maker", "meme templates", "AI image generator", "meme studio", "solana", "lika"],
   authors: [{ name: "MemeLab AI" }],
   icons: {
     icon: [
@@ -47,8 +47,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "MemeLab AI — Free Meme Generator, AI Meme Studio",
-    description: "Create professional memes with MemeLab AI. Choose from 1000+ templates, generate AI captions, export in HD — no signup, no watermarks.",
+    title: "MemeLab AI — AI Meme Generator & Studio",
+    description: "Create memes with AI on Solana. AI image generation, curated templates, voice companion. Powered by $LIKA.",
     images: [
       {
         url: "/memelab-og.jpg",
@@ -60,8 +60,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "MemeLab AI — Free Meme Generator, AI Meme Studio",
-    description: "Create professional memes with MemeLab AI. Choose from 1000+ templates, generate AI captions, export in HD — no signup, no watermarks.",
+    title: "MemeLab AI — AI Meme Generator & Studio",
+    description: "Create memes with AI on Solana. AI image generation, curated templates, voice companion. Powered by $LIKA.",
     images: ["/memelab-og.jpg"],
   },
 };
