@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { MobileNav } from '@/components/MobileNav';
+import { Footer } from '@/components/Footer';
 import { useEffect } from 'react';
 
 /* ─── Data ─────────────────────────────────────────────── */
@@ -128,7 +129,7 @@ export default function Home() {
             <div className="flex-1 text-center lg:text-left animate-fade-in-up">
               {/* eyebrow badge */}
               <div
-                className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-all hover:scale-105"
                 style={{
                   border: '1px solid rgba(16,185,129,0.4)',
                   color: '#10b981',
@@ -166,7 +167,7 @@ export default function Home() {
               <div className="mt-8 flex flex-wrap gap-3 justify-center lg:justify-start">
                 <Link
                   href="/meme-studio"
-                  className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-all duration-200 hover:scale-[1.04]"
+                  className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-all duration-200 hover:scale-105 hover:shadow-xl"
                   style={{
                     backgroundImage: 'var(--gradient-primary)',
                     color: '#020617',
@@ -178,7 +179,7 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/image-studio"
-                  className="btn-secondary inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold"
+                  className="btn-secondary inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all duration-200 hover:scale-105"
                 >
                   AI Image Studio
                   <ArrowRight className="h-4 w-4" />
@@ -287,13 +288,14 @@ export default function Home() {
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer"
+                className="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer hover:shadow-md"
                 style={{
                   backgroundColor: activeCategory === cat ? 'var(--accent-primary)' : 'transparent',
                   color: activeCategory === cat ? '#020617' : 'var(--text-secondary)',
                   border: '1px solid',
-                  borderColor: activeCategory === cat ? 'transparent' : 'var(--border-opacity-15)',
+                  borderColor: activeCategory === cat ? 'transparent' : 'var(--border)',
                 }}
+                aria-pressed={activeCategory === cat}
               >
                 {cat}
               </button>
@@ -308,30 +310,44 @@ export default function Home() {
                 href="/meme-studio"
                 className="group relative overflow-hidden rounded-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-xl no-underline"
                 style={{
-                  border: '1px solid var(--border-opacity-10)',
+                  border: '1px solid var(--border)',
                   backgroundColor: 'var(--bg-elevated)',
                 }}
               >
-                {/* mock image area */}
+                {/* enhanced gradient image area with visual appeal */}
                 <div
-                  className="aspect-square w-full flex items-center justify-center"
+                  className="aspect-square w-full flex items-center justify-center overflow-hidden relative"
                   style={{
-                    background: `linear-gradient(145deg, hsl(${t.hue},38%,11%), hsl(${t.hue + 25},28%,7%))`,
+                    background: `linear-gradient(135deg, hsl(${t.hue},55%,20%), hsl(${t.hue + 25},48%,14%))`,
                   }}
                 >
-                  <span className="text-4xl opacity-30">🎭</span>
+                  {/* subtle animated background pattern */}
+                  <div
+                    className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
+                    style={{
+                      backgroundImage: `radial-gradient(circle at 20% 50%, hsl(${t.hue}, 40%, 40%) 1px, transparent 1px)`,
+                      backgroundSize: '20px 20px',
+                    }}
+                  />
+                  <span 
+                    className="text-5xl opacity-40 group-hover:opacity-60 transition-all group-hover:scale-110" 
+                    style={{ transform: 'translate(0, 0)' }}
+                    aria-hidden="true"
+                  >
+                    🎭
+                  </span>
                 </div>
                 {/* rank badge */}
                 <div className="absolute left-2 top-2">
                   <span
-                    className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                    className="rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-md"
                     style={{ backgroundImage: 'var(--gradient-primary)', color: '#020617' }}
                   >
                     #{t.rank}
                   </span>
                 </div>
                 <div className="p-2.5">
-                  <p className="truncate text-xs font-semibold" style={{ color: 'var(--text)' }}>{t.name}</p>
+                  <p className="truncate text-xs font-semibold group-hover:text-accent transition-colors" style={{ color: 'var(--text)' }}>{t.name}</p>
                   <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{t.category}</p>
                 </div>
               </Link>
@@ -364,17 +380,17 @@ export default function Home() {
             {TOOLS.map(tool => (
               <div
                 key={tool.title}
-                className="flex flex-col gap-4 rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1"
+                className="flex flex-col gap-4 rounded-2xl p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
                 style={{
                   backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-opacity-10)',
+                  border: '1px solid var(--border)',
                   boxShadow: '0 4px 24px rgba(2,6,23,0.5)',
                 }}
               >
                 <div className="flex items-start justify-between">
-                  <span className="text-3xl">{tool.emoji}</span>
+                  <span className="text-4xl">{tool.emoji}</span>
                   <span
-                    className="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                    className="rounded-full px-2.5 py-0.5 text-[11px] font-bold shadow-md"
                     style={{ backgroundColor: tool.badgeBg, color: '#fff' }}
                   >
                     {tool.badge}
@@ -388,7 +404,7 @@ export default function Home() {
                 </div>
                 <Link
                   href={tool.href}
-                  className="inline-flex items-center gap-1 text-sm font-semibold"
+                  className="inline-flex items-center gap-1 text-sm font-semibold hover:gap-2 transition-all"
                   style={{ color: 'var(--accent-primary)' }}
                 >
                   {tool.cta} <ArrowRight className="h-3.5 w-3.5" />
@@ -432,6 +448,7 @@ export default function Home() {
                     border: `1px solid ${step.color}40`,
                     boxShadow: `0 0 20px ${step.color}20`,
                   }}
+                  aria-hidden="true"
                 >
                   {step.emoji}
                 </div>
@@ -484,10 +501,11 @@ export default function Home() {
               <div
                 className="flex h-44 w-full max-w-xs items-center justify-center rounded-2xl text-5xl"
                 style={{
-                  border: '1px solid var(--border-opacity-10)',
+                  border: '1px solid var(--border)',
                   background: `radial-gradient(ellipse at center, ${f.accentColor}14 0%, transparent 70%)`,
                   backgroundColor: 'var(--bg-secondary)',
                 }}
+                aria-hidden="true"
               >
                 {f.emoji}
               </div>
@@ -509,16 +527,17 @@ export default function Home() {
             {FAQS.map((faq, idx) => (
               <div
                 key={idx}
-                className="overflow-hidden rounded-xl"
+                className="overflow-hidden rounded-xl transition-all duration-200 hover:shadow-md"
                 style={{
-                  border: '1px solid var(--border-opacity-10)',
-                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  backgroundColor: openFaq === idx ? 'var(--bg-elevated)' : 'var(--bg-secondary)',
                 }}
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="flex w-full cursor-pointer items-center justify-between gap-4 px-5 py-4 text-left text-sm font-medium"
+                  className="flex w-full cursor-pointer items-center justify-between gap-4 px-5 py-4 text-left text-sm font-medium transition-colors duration-200"
                   style={{ color: 'var(--text)' }}
+                  aria-expanded={openFaq === idx}
                 >
                   <span>{faq.q}</span>
                   {openFaq === idx
@@ -528,8 +547,11 @@ export default function Home() {
                 </button>
                 {openFaq === idx && (
                   <div
-                    className="animate-fade-in-up px-5 pb-4 text-sm leading-relaxed"
-                    style={{ color: 'var(--text-secondary)' }}
+                    className="animate-fade-in-up px-5 pb-4 text-sm leading-relaxed border-t"
+                    style={{ 
+                      color: 'var(--text-secondary)',
+                      borderColor: 'var(--border)',
+                    }}
                   >
                     {faq.a}
                   </div>
@@ -547,7 +569,7 @@ export default function Home() {
           style={{ background: 'var(--gradient-surface)' }}
         />
         <div className="mx-auto max-w-2xl px-4 text-center">
-          <span className="text-5xl">🎭</span>
+          <span className="text-5xl" aria-hidden="true">🎭</span>
           <h2 className="mt-5 text-4xl font-extrabold lg:text-5xl animate-tracking-in">
             Ready to Create Viral{' '}
             <span
@@ -568,7 +590,7 @@ export default function Home() {
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
             <Link
               href="/meme-studio"
-              className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold transition-all duration-200 hover:scale-[1.04]"
+              className="inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold transition-all duration-200 hover:scale-105 hover:shadow-xl"
               style={{
                 backgroundImage: 'var(--gradient-primary)',
                 color: '#020617',
@@ -580,7 +602,7 @@ export default function Home() {
             </Link>
             <Link
               href="/companion"
-              className="btn-secondary inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold"
+              className="btn-secondary inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold transition-all duration-200 hover:scale-105"
             >
               Try AI Companion
             </Link>
@@ -595,6 +617,8 @@ export default function Home() {
           onToggleMenu={() => setMobileMenuOpen(o => !o)}
         />
       )}
+      
+      <Footer />
     </div>
   );
 }

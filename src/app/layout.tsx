@@ -40,29 +40,29 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Likable AI",
+    title: "MemeLab AI",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
-  type: "website",
-  title: "Likable - AI Trading Companion",
-  description: "Likable is your AI trading companion for voice conversations and market analysis",
+    type: "website",
+    title: "MemeLab AI — Free Meme Generator, AI Meme Studio",
+    description: "Create professional memes with MemeLab AI. Choose from 1000+ templates, generate AI captions, export in HD — no signup, no watermarks.",
     images: [
       {
-        url: "/companioni.jpg",
+        url: "/memelab-og.jpg",
         width: 1200,
         height: 630,
-        alt: "Likable AI voice companion character",
+        alt: "MemeLab AI meme generator studio",
       },
     ],
   },
   twitter: {
-  card: "summary_large_image",
-  title: "Likable - AI Trading Companion",
-  description: "Likable is your AI trading companion for voice conversations and market analysis",
-    images: ["/companioni.jpg"],
+    card: "summary_large_image",
+    title: "MemeLab AI — Free Meme Generator, AI Meme Studio",
+    description: "Create professional memes with MemeLab AI. Choose from 1000+ templates, generate AI captions, export in HD — no signup, no watermarks.",
+    images: ["/memelab-og.jpg"],
   },
 };
 
@@ -78,7 +78,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Likable AI" />
+        <meta name="apple-mobile-web-app-title" content="MemeLab AI" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="theme-color" content="#000000" id="theme-color-meta" />
       </head>
