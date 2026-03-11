@@ -600,10 +600,10 @@ function wrapStroke(
   }
 }
 
-/* ========== FULL IMPLEMENTATION - COMMENTED OUT ==========
-const SECTION_GAP = 'var(--space-6)';
-const CARD_PADDING = 'var(--space-4)';
+// (duplicate removed)
 
+// END OF FILE
+/*
 export default function MemeStudioPage() {
   const [templates, setTemplates] = useState<MemeTemplate[]>([]);
   const [idea, setIdea] = useState('');
@@ -1164,32 +1164,5 @@ export default function MemeStudioPage() {
 //     </AppLayout>
 //   );
 // }
-function wrapStroke(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number
-) {
-  const words = text.split(' ');
-  let line = '';
-  const lineHeight = ctx.measureText('M').actualBoundingBoxAscent * 1.2;
-  let currentY = y;
-  for (let i = 0; i < words.length; i++) {
-    const test = line + (line ? ' ' : '') + words[i];
-    const m = ctx.measureText(test);
-    if (m.width > maxWidth && line) {
-      ctx.strokeText(line, x, currentY);
-      ctx.fillText(line, x, currentY);
-      line = words[i];
-      currentY += lineHeight;
-    } else {
-      line = test;
-    }
-  }
-  if (line) {
-    ctx.strokeText(line, x, currentY);
-    ctx.fillText(line, x, currentY);
-  }
-}
+*/
 
