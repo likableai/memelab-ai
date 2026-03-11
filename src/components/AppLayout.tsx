@@ -1,7 +1,8 @@
 'use client';
 
-import React, { ReactNode } from 'react';
-import { Sidebar } from './Sidebar';
+import React, { ReactNode, useEffect, useState } from 'react';
+import { Navbar } from './Navbar';
+import { MobileNav } from './MobileNav';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -9,23 +10,39 @@ interface AppLayoutProps {
   onSettingsOpen?: () => void;
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ 
-  children, 
-  onTextChatOpen, 
-  onSettingsOpen 
+export const AppLayout: React.FC<AppLayoutProps> = ({
+  children,
+  onTextChatOpen,
+  onSettingsOpen,
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const update = () => setIsMobile(window.innerWidth < 1024);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   return (
-    <div 
-      className="flex min-h-screen h-dvh w-full overflow-x-hidden transition-colors duration-200"
-      style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
+    <div
+      className="flex min-h-dvh w-full flex-col overflow-x-hidden"
+      style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
     >
-      <Sidebar 
-        onTextChatOpen={onTextChatOpen}
-        onSettingsOpen={onSettingsOpen}
-      />
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto relative">
+      <Navbar />
+      <main className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
         {children}
       </main>
+      {isMobile && (
+        <MobileNav
+          mobileMenuOpen={mobileMenuOpen}
+          onToggleMenu={() => setMobileMenuOpen((open) => !open)}
+          onSettingsOpen={onSettingsOpen}
+          onTextChatOpen={onTextChatOpen}
+        />
+      )}
     </div>
   );
 };

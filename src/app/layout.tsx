@@ -13,10 +13,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Likable - AI Trading Companion",
-  description: "Likable is your AI trading companion for voice conversations, chart scenarios, emotional processing, and risk management. Powered by BNB Smart Chain.",
-  keywords: ["AI companion", "voice companion", "market analysis", "trading", "risk management", "BSC", "BNB", "crypto"],
-  authors: [{ name: "Likable" }],
+  title: "MemeLab AI — Free Meme Generator, AI Meme Studio",
+  description: "Create professional memes with MemeLab AI. Choose from 1000+ templates, generate AI captions, export in HD — no signup, no watermarks.",
+  keywords: ["meme generator", "AI memes", "free meme maker", "meme templates", "AI image generator", "meme studio"],
+  authors: [{ name: "MemeLab AI" }],
   icons: {
     icon: [
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },

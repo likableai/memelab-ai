@@ -48,9 +48,10 @@ export const ConversationTranscript: React.FC<ConversationTranscriptProps> = ({
           <div className="mb-2 px-1">
             <span
               className="text-xs font-normal uppercase tracking-wide"
-              style={{ 
-                fontFamily: "'Times New Roman', Times, serif",
-                color: 'var(--text-opacity-50)'
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color: 'var(--text-opacity-50)',
               }}
             >
               {item.isUser ? 'You' : 'Likable AI'}
@@ -59,20 +60,22 @@ export const ConversationTranscript: React.FC<ConversationTranscriptProps> = ({
 
           {/* Message */}
           <div
-            className={`rounded-2xl ${
-              item.isUser ? '' : 'card'
-            }`}
-            style={{ 
-              fontFamily: "'Times New Roman', Times, serif",
+            className={`rounded-2xl ${item.isUser ? '' : 'card'}`}
+            style={{
+              fontFamily:
+                "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
               backgroundColor: item.isUser ? 'var(--accent-primary)' : undefined,
               color: item.isUser ? 'var(--bg)' : 'var(--text)',
               padding: item.isUser ? 'var(--space-3-5) var(--space-5)' : undefined,
-              maxWidth: 'var(--max-width-transcript)'
+              maxWidth: 'var(--max-width-transcript)',
             }}
           >
             <p
               className="text-base leading-relaxed whitespace-pre-wrap break-words"
-              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              }}
             >
               {item.text}
             </p>
@@ -82,9 +85,10 @@ export const ConversationTranscript: React.FC<ConversationTranscriptProps> = ({
           <div className="mt-1 px-1">
             <span
               className="text-xs"
-              style={{ 
-                fontFamily: "'Times New Roman', Times, serif",
-                color: 'var(--text-opacity-50)'
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                color: 'var(--text-opacity-50)',
               }}
             >
               {new Date(item.timestamp).toLocaleTimeString([], {

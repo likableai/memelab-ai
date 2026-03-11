@@ -20,10 +20,11 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   return (
     <div
       className={`${sizeClasses[size]} rounded-full animate-spin ${className}`}
-      style={{ 
-        fontFamily: "'Times New Roman', Times, serif",
+      style={{
+        fontFamily:
+          "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         borderColor: 'var(--border-opacity-20)',
-        borderTopColor: 'var(--accent-primary)'
+        borderTopColor: 'var(--accent-primary)',
       }}
       aria-label="Loading"
       role="status"

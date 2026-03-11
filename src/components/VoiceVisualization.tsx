@@ -59,8 +59,9 @@ export const VoiceVisualization: React.FC<VoiceVisualizationProps> = ({
       <div className="mt-6 text-center">
         <p
           className="text-sm font-normal uppercase tracking-wider"
-          style={{ 
-            fontFamily: "'Times New Roman', Times, serif",
+          style={{
+            fontFamily:
+              "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             color: state === 'error' ? 'var(--color-error)' : 'var(--text)',
             opacity: state === 'idle' ? 0.7 : 1,
           }}

@@ -80,7 +80,8 @@ export const WalletButton: React.FC = () => {
             color: 'var(--bg)',
             borderRadius: 'var(--radius-full)',
             padding: 'var(--space-1) var(--space-3)',
-            fontFamily: "'Times New Roman', Times, serif",
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             fontSize: 'var(--font-sm)',
             fontWeight: 'var(--font-weight-normal)',
             minHeight: 'var(--button-height-compact)',
@@ -109,7 +110,8 @@ export const WalletButton: React.FC = () => {
               borderRadius: 'var(--radius-md)',
               padding: 'var(--space-2)',
               zIndex: 50,
-              fontFamily: "'Times New Roman', Times, serif",
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
               minWidth: 140,
             }}
           >
@@ -140,7 +142,8 @@ export const WalletButton: React.FC = () => {
           className="text-xs text-center flex items-center justify-center rounded-lg"
           style={{
             color: 'var(--text)',
-            fontFamily: "'Times New Roman', Times, serif",
+            fontFamily:
+              "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
             padding: 'var(--space-1) var(--space-2)',
             border: '1px solid var(--border-opacity-10)',
             backgroundColor: 'var(--bg-opacity-5)',

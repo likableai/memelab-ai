@@ -16,22 +16,27 @@ export const UsageSummary: React.FC<UsageSummaryProps> = ({
   return (
     <div
       className="card"
-      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      style={{
+        fontFamily:
+          "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
     >
-      <p 
+      <p
         className="text-sm font-medium"
-        style={{ 
-          fontFamily: "'Times New Roman', Times, serif",
-          color: 'var(--text-opacity-90)'
+        style={{
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          color: 'var(--text-opacity-90)',
         }}
       >
         LIKA used
       </p>
-      <p 
+      <p
         className="mt-1 text-lg font-normal"
-        style={{ 
-          fontFamily: "'Times New Roman', Times, serif",
-          color: 'var(--text)'
+        style={{
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          color: 'var(--text)',
         }}
       >
         {consumedAmount.toFixed(2)}
@@ -43,11 +48,12 @@ export const UsageSummary: React.FC<UsageSummaryProps> = ({
         </span>
       </p>
       {usdValue > 0 && (
-        <p 
+        <p
           className="mt-0.5 text-sm"
-          style={{ 
-            fontFamily: "'Times New Roman', Times, serif",
-            color: 'var(--text-opacity-60)'
+          style={{
+            fontFamily:
+              "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: 'var(--text-opacity-60)',
           }}
         >
           ≈ ${usdValue.toFixed(2)}

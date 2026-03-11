@@ -54,7 +54,8 @@ export const TokenBalance: React.FC = () => {
     <div
       className="card flex items-center gap-3 flex-wrap"
       style={{
-        fontFamily: "'Times New Roman', Times, serif",
+        fontFamily:
+          "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         padding: 'var(--space-1-5) var(--space-2-5)'
       }}
     >
@@ -81,7 +82,8 @@ export const TokenBalance: React.FC = () => {
         onClick={handleLogout}
         className="flex items-center gap-1 text-xs transition-colors bg-transparent border-none p-0 cursor-pointer"
         style={{
-          fontFamily: "'Times New Roman', Times, serif",
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           color: 'var(--text-opacity-60)',
           fontSize: 'inherit'
         }}

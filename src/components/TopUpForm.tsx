@@ -246,12 +246,16 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
   return (
     <div
       className="card"
-      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      style={{
+        fontFamily:
+          "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
     >
       <h3
         className="text-sm font-medium mb-2"
         style={{
-          fontFamily: "'Times New Roman', Times, serif",
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           color: 'var(--text-opacity-90)',
         }}
       >
@@ -271,7 +275,8 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
               <label
                 className="block text-xs mb-1"
                 style={{
-                  fontFamily: "'Times New Roman', Times, serif",
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                   color: 'var(--text-opacity-70)',
                 }}
               >
@@ -285,14 +290,18 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
                 className="input w-full"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                style={{
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                }}
               />
             </div>
             {message && (
               <p
                 className="text-sm"
                 style={{
-                  fontFamily: "'Times New Roman', Times, serif",
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                   color: message.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
                 }}
               >
@@ -303,7 +312,10 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
               type="submit"
               disabled={!amount.trim() || loading}
               className="w-full btn-primary flex items-center justify-center gap-2"
-              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              }}
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -319,13 +331,16 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
               <span className="text-xs font-mono truncate flex-1" style={{ color: 'var(--text-opacity-70)' }}>
                 {truncateAddress(treasuryAddress)}
               </span>
-              <button
-                type="button"
-                onClick={copyTreasuryAddress}
-                className="flex items-center gap-1.5 text-xs btn-secondary"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
-                aria-label="Copy treasury address"
-              >
+            <button
+              type="button"
+              onClick={copyTreasuryAddress}
+              className="flex items-center gap-1.5 text-xs btn-secondary"
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              }}
+              aria-label="Copy treasury address"
+            >
                 <Copy className="w-4 h-4" />
                 Copy
               </button>
@@ -337,7 +352,8 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
               <label
                 className="block text-xs mb-1"
                 style={{
-                  fontFamily: "'Times New Roman', Times, serif",
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                   color: 'var(--text-opacity-70)',
                 }}
               >
@@ -349,14 +365,18 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
                 onChange={(e) => setTxHash(e.target.value)}
                 placeholder="Tx hash"
                 className="input w-full"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                style={{
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                }}
               />
             </div>
             {message && (
               <p
                 className="text-sm"
                 style={{
-                  fontFamily: "'Times New Roman', Times, serif",
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                   color: message.type === 'success' ? 'var(--color-success)' : 'var(--color-error)',
                 }}
               >
@@ -367,7 +387,10 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
               type="submit"
               disabled={loading || !txHash.trim()}
               className="w-full btn-primary flex items-center justify-center gap-2"
-              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              }}
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -394,7 +417,8 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
               onClick={() => setShowReceiveElsewhere((v) => !v)}
               className="flex items-center gap-2 text-xs w-full justify-between"
               style={{
-                fontFamily: "'Times New Roman', Times, serif",
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                 color: 'var(--text-opacity-60)',
                 backgroundColor: 'transparent',
               }}
@@ -414,7 +438,10 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
                     onChange={(e) => setReceiveTxHash(e.target.value)}
                     placeholder="Tx hash"
                     className="input w-full"
-                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                    style={{
+                      fontFamily:
+                        "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    }}
                   />
                 </div>
                 <div>
@@ -429,14 +456,20 @@ export const TopUpForm: React.FC<TopUpFormProps> = ({
                     onChange={(e) => setReceiveAmount(e.target.value)}
                     placeholder="Amount"
                     className="input w-full"
-                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                    style={{
+                      fontFamily:
+                        "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    }}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full btn-secondary text-sm"
-                  style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                  style={{
+                    fontFamily:
+                      "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  }}
                 >
                   {loading ? 'Submitting…' : 'Submit'}
                 </button>

@@ -270,19 +270,19 @@ export const CompanionInterface: React.FC = () => {
 
               {/* Error Message */}
               {errorMessage && (
-                <div 
+                <div
                   className="p-4 rounded-xl text-center"
-                  style={{ 
+                  style={{
                     backgroundColor: 'var(--color-error-bg)',
                     border: '1px solid var(--color-error)',
-                    fontFamily: "'Times New Roman', Times, serif"
+                    fontFamily: "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                   }}
                 >
-                  <p 
+                  <p
                     className="text-sm"
-                    style={{ 
-                      fontFamily: "'Times New Roman', Times, serif",
-                      color: 'var(--color-error-light)'
+                    style={{
+                      fontFamily: "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      color: 'var(--color-error-light)',
                     }}
                   >
                     {errorMessage}

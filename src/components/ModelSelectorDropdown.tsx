@@ -51,10 +51,11 @@ export const ModelSelectorDropdown: React.FC<ModelSelectorDropdownProps> = ({
         disabled={disabled}
         className="w-full px-4 py-3 text-left flex items-center justify-between transition-all input"
         style={{
-          fontFamily: "'Times New Roman', Times, serif",
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           borderColor: 'var(--dropdown-border)',
           backgroundColor: 'var(--dropdown-bg)',
-          color: 'var(--text)'
+          color: 'var(--text)',
         }}
         onMouseEnter={(e) => {
           if (!disabled) e.currentTarget.style.borderColor = 'var(--border-opacity-15)';
@@ -66,11 +67,12 @@ export const ModelSelectorDropdown: React.FC<ModelSelectorDropdownProps> = ({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span 
+        <span
           className="text-sm leading-none"
-          style={{ 
-            fontFamily: "'Times New Roman', Times, serif",
-            color: 'var(--text)'
+          style={{
+            fontFamily:
+              "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: 'var(--text)',
           }}
         >
           {selectedOption?.label}
@@ -101,10 +103,17 @@ export const ModelSelectorDropdown: React.FC<ModelSelectorDropdownProps> = ({
                 }}
                 className="w-full px-4 py-3 text-left flex items-center gap-3 transition-all rounded-lg"
                 style={{
-                  fontFamily: "'Times New Roman', Times, serif",
-                  backgroundColor: selectedModel === option.value ? 'var(--dropdown-item-selected-bg)' : 'var(--dropdown-item-bg)',
-                  color: selectedModel === option.value ? 'var(--dropdown-item-selected-text)' : 'var(--text)',
-                  border: selectedModel === option.value ? `1px solid var(--dropdown-item-selected-border)` : '1px solid transparent'
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  backgroundColor:
+                    selectedModel === option.value ? 'var(--dropdown-item-selected-bg)' : 'var(--dropdown-item-bg)',
+                  color: selectedModel === option.value
+                    ? 'var(--dropdown-item-selected-text)'
+                    : 'var(--text)',
+                  border:
+                    selectedModel === option.value
+                      ? `1px solid var(--dropdown-item-selected-border)`
+                      : '1px solid transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedModel !== option.value) {
@@ -126,19 +135,24 @@ export const ModelSelectorDropdown: React.FC<ModelSelectorDropdownProps> = ({
                   />
                 )}
                 <div className="flex-1">
-                  <div 
+                  <div
                     className="text-sm font-semibold"
-                    style={{ 
-                      fontFamily: "'Times New Roman', Times, serif"
+                    style={{
+                      fontFamily:
+                        "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                     }}
                   >
                     {option.label}
                   </div>
-                  <div 
+                  <div
                     className="text-xs"
-                    style={{ 
-                      fontFamily: "'Times New Roman', Times, serif",
-                      color: selectedModel === option.value ? 'var(--text-opacity-80)' : 'var(--text-opacity-60)'
+                    style={{
+                      fontFamily:
+                        "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      color:
+                        selectedModel === option.value
+                          ? 'var(--text-opacity-80)'
+                          : 'var(--text-opacity-60)',
                     }}
                   >
                     {option.description}

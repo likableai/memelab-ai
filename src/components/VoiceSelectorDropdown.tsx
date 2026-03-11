@@ -54,10 +54,11 @@ export const VoiceSelectorDropdown: React.FC<VoiceSelectorDropdownProps> = ({
         disabled={disabled}
         className="w-full px-4 py-3 text-left flex items-center justify-between transition-all input"
         style={{
-          fontFamily: "'Times New Roman', Times, serif",
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           borderColor: 'var(--dropdown-border)',
           backgroundColor: 'var(--dropdown-bg)',
-          color: 'var(--text)'
+          color: 'var(--text)',
         }}
         onMouseEnter={(e) => {
           if (!disabled) e.currentTarget.style.borderColor = 'var(--border-opacity-15)';
@@ -69,11 +70,12 @@ export const VoiceSelectorDropdown: React.FC<VoiceSelectorDropdownProps> = ({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span 
+        <span
           className="text-sm leading-none"
-          style={{ 
-            fontFamily: "'Times New Roman', Times, serif",
-            color: 'var(--text)'
+          style={{
+            fontFamily:
+              "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: 'var(--text)',
           }}
         >
           {selectedOption?.label}
@@ -104,10 +106,17 @@ export const VoiceSelectorDropdown: React.FC<VoiceSelectorDropdownProps> = ({
                 }}
                 className="w-full px-4 py-3 text-left flex items-center gap-3 transition-all rounded-lg"
                 style={{
-                  fontFamily: "'Times New Roman', Times, serif",
-                  backgroundColor: selectedVoice === option.value ? 'var(--dropdown-item-selected-bg)' : 'var(--dropdown-item-bg)',
-                  color: selectedVoice === option.value ? 'var(--dropdown-item-selected-text)' : 'var(--text)',
-                  border: selectedVoice === option.value ? `1px solid var(--dropdown-item-selected-border)` : '1px solid transparent'
+                  fontFamily:
+                    "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                  backgroundColor:
+                    selectedVoice === option.value ? 'var(--dropdown-item-selected-bg)' : 'var(--dropdown-item-bg)',
+                  color: selectedVoice === option.value
+                    ? 'var(--dropdown-item-selected-text)'
+                    : 'var(--text)',
+                  border:
+                    selectedVoice === option.value
+                      ? `1px solid var(--dropdown-item-selected-border)`
+                      : '1px solid transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedVoice !== option.value) {
@@ -129,19 +138,24 @@ export const VoiceSelectorDropdown: React.FC<VoiceSelectorDropdownProps> = ({
                   />
                 )}
                 <div className="flex-1">
-                  <div 
+                  <div
                     className="text-sm font-semibold"
-                    style={{ 
-                      fontFamily: "'Times New Roman', Times, serif"
+                    style={{
+                      fontFamily:
+                        "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                     }}
                   >
                     {option.label}
                   </div>
-                  <div 
+                  <div
                     className="text-xs"
-                    style={{ 
-                      fontFamily: "'Times New Roman', Times, serif",
-                      color: selectedVoice === option.value ? 'var(--text-opacity-80)' : 'var(--text-opacity-60)'
+                    style={{
+                      fontFamily:
+                        "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      color:
+                        selectedVoice === option.value
+                          ? 'var(--text-opacity-80)'
+                          : 'var(--text-opacity-60)',
                     }}
                   >
                     {option.description}

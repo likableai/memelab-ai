@@ -332,4 +332,213 @@ export const generateMeme = async (body: GenerateMemeRequest): Promise<GenerateM
   return response.data;
 };
 
+// Image Studio API
+export interface MemePattern {
+  id: string;
+  name: string;
+  description: string;
+  remixPrompt: string;
+  aspectRatio?: string;
+}
+
+export interface GetImageStudioPatternsParams {
+  page?: number;
+  limit?: number;
+  format?: string;
+  theme?: string;
+  category?: string;
+  q?: string;
+}
+
+export interface GetImageStudioPatternsResponse {
+  patterns: MemePattern[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export const getImageStudioPatterns = async (
+  params?: GetImageStudioPatternsParams
+): Promise<GetImageStudioPatternsResponse> => {
+  const response = await api.get<GetImageStudioPatternsResponse>('/image-studio/patterns', {
+    params: params ? {
+      page: params.page,
+      limit: params.limit,
+      format: params.format,
+      theme: params.theme,
+      category: params.category,
+      q: params.q,
+    } : undefined,
+  });
+  return response.data;
+};
+
+export const getImageStudioFormats = async (): Promise<string[]> => {
+  const response = await api.get<string[]>('/image-studio/patterns/formats');
+  return response.data;
+};
+
+export const getImageStudioThemes = async (): Promise<string[]> => {
+  const response = await api.get<string[]>('/image-studio/patterns/themes');
+  return response.data;
+};
+
+export interface GenerateImageStudioParams {
+  prompt: string;
+  aspectRatio?: string;
+  mode?: 'avatar' | 'logo' | 'meme';
+}
+
+export interface GenerateImageStudioResponse {
+  url: string;
+  filename: string;
+}
+
+export const generateImageStudioImage = async (
+  params: GenerateImageStudioParams
+): Promise<GenerateImageStudioResponse> => {
+  const response = await api.post<GenerateImageStudioResponse>('/image-studio/generate', params);
+  return response.data;
+};
+
+export interface RemixImageStudioParams {
+  referenceImageBase64: string;
+  patternId?: string;
+  customPrompt?: string;
+  aspectRatio?: string;
+}
+
+export const remixImageStudioImage = async (
+  params: RemixImageStudioParams
+): Promise<GenerateImageStudioResponse> => {
+  const response = await api.post<GenerateImageStudioResponse>('/image-studio/remix', params);
+  return response.data;
+};
+
+export interface RemixBatchResult {
+  patternId: string;
+  url: string;
+  filename: string;
+}
+
+export const remixImageStudioBatch = async (
+  referenceImageBase64: string,
+  patternIds?: string[]
+): Promise<{ results: RemixBatchResult[] }> => {
+  const response = await api.post<{ results: RemixBatchResult[] }>('/image-studio/remix-batch', {
+    referenceImageBase64,
+    patternIds,
+  });
+  return response.data;
+};
+
+// --- Memelord API ---
+
+export interface MemelordMemeResult {
+  success: boolean;
+  url: string;
+  expires_in: number;
+  template_name?: string;
+  template_id?: string;
+}
+
+export interface MemelordMemeResponse {
+  success: boolean;
+  prompt: string;
+  total_generated: number;
+  results: MemelordMemeResult[];
+}
+
+export interface MemelordVideoJob {
+  job_id: string;
+  template_name?: string;
+  template_id?: string;
+  caption?: string;
+}
+
+export interface MemelordVideoResponse {
+  success: boolean;
+  prompt: string;
+  total_requested: number;
+  jobs: MemelordVideoJob[];
+  message?: string;
+}
+
+export interface MemelordMemeParams {
+  prompt: string;
+  count?: number;
+  category?: 'trending' | 'classic';
+  includeNsfw?: boolean;
+}
+
+export interface MemelordVideoParams {
+  prompt: string;
+  count?: number;
+  category?: 'trending' | 'classic';
+  template_id?: string;
+}
+
+export const createMemelordMeme = async (
+  params: MemelordMemeParams
+): Promise<MemelordMemeResponse> => {
+  const response = await api.post<MemelordMemeResponse>('/memelord/meme', params);
+  return response.data;
+};
+
+export const createMemelordVideo = async (
+  params: MemelordVideoParams
+): Promise<MemelordVideoResponse> => {
+  const response = await api.post<MemelordVideoResponse>('/memelord/video', params);
+  return response.data;
+};
+
+export interface MemeIdea {
+  id: string;
+  prompt: string;
+  caption?: string;
+  templateName?: string;
+  templateId?: string;
+  tags: string[];
+  source: string;
+  mediaType: string;
+  url?: string;
+  createdAt: string;
+}
+
+export interface GetMemelordIdeasParams {
+  tag?: string;
+  limit?: number;
+  skip?: number;
+  mediaType?: 'image' | 'video';
+}
+
+export interface GetMemelordIdeasResponse {
+  ideas: MemeIdea[];
+  total: number;
+}
+
+export const getMemelordIdeas = async (
+  params?: GetMemelordIdeasParams
+): Promise<GetMemelordIdeasResponse> => {
+  const response = await api.get<GetMemelordIdeasResponse>('/memelord/ideas', {
+    params: params ? {
+      tag: params.tag,
+      limit: params.limit,
+      skip: params.skip,
+      mediaType: params.mediaType,
+    } : undefined,
+  });
+  return response.data;
+};
+
+/** Resolve image-studio file URL for display/download. */
+export function resolveImageStudioFileUrl(url: string): string {
+  if (typeof url !== 'string' || !url) return url;
+  if (url.startsWith('/api/image-studio/file/')) {
+    const base = getApiUrl().replace(/\/api$/, '');
+    return `${base}${url}`;
+  }
+  return url;
+}
+
 export default api;

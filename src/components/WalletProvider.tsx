@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * EVM wallet provider that enforces BNB Smart Chain (BSC).
+ * Uses the standard wallet interface (window.ethereum / "eth_*" methods) but
+ * always switches to BSC mainnet (56) or testnet (97) via ensureBscNetwork().
+ * We do not connect to Ethereum mainnet (1).
+ */
 import React, {
   createContext,
   useContext,
@@ -12,6 +18,10 @@ import { BrowserProvider } from 'ethers';
 
 const BSC_MAINNET_CHAIN_ID = 56;
 const BSC_TESTNET_CHAIN_ID = 97;
+
+function isBscChain(chainId: number): boolean {
+  return chainId === BSC_MAINNET_CHAIN_ID || chainId === BSC_TESTNET_CHAIN_ID;
+}
 
 interface EvmWalletContextValue {
   address: string | null;
@@ -129,13 +139,17 @@ export const EvmWalletProvider: React.FC<EvmWalletProviderProps> = ({
       const ok = await ensureBscNetwork();
       if (!ok) return;
 
-      const rpcUrl = getRpcUrl();
       const prov = new BrowserProvider(ethereum);
       const chainIdRes = await prov.getNetwork();
-      const signerInstance = await prov.getSigner();
+      const resolvedChainId = Number(chainIdRes.chainId);
+      if (!isBscChain(resolvedChainId)) {
+        setError(`Wrong network. Please switch to BNB Smart Chain (BSC). Current chain ID: ${resolvedChainId}`);
+        return;
+      }
 
+      const signerInstance = await prov.getSigner();
       setAddress(accounts[0]);
-      setChainId(Number(chainIdRes.chainId));
+      setChainId(resolvedChainId);
       setProvider(prov);
       setSigner(signerInstance);
     } catch (e) {
@@ -160,11 +174,21 @@ export const EvmWalletProvider: React.FC<EvmWalletProviderProps> = ({
     const ethereum = (typeof window !== 'undefined' && (window as unknown as { ethereum?: { on: (event: string, cb: (...args: unknown[]) => void) => void } }).ethereum) ?? null;
     if (!ethereum) return;
 
-    const handleAccountsChanged = (accounts: unknown) => {
+    const handleAccountsChanged = async (accounts: unknown) => {
       const list = Array.isArray(accounts) ? accounts : [];
-      if (list.length === 0) {
-        disconnect();
+      if (list.length > 0) {
+        setAddress(list[0] as string);
+        return;
       }
+      // MetaMask can emit empty [] spuriously during connect or page load.
+      // Re-verify with eth_accounts before disconnecting.
+      try {
+        const verified = (await ethereum.request({ method: 'eth_accounts' }) as string[]) ?? [];
+        if (verified.length > 0) return;
+      } catch {
+        // Ignore - proceed to disconnect
+      }
+      disconnect();
     };
 
     const handleChainChanged = () => {
@@ -186,16 +210,17 @@ export const EvmWalletProvider: React.FC<EvmWalletProviderProps> = ({
       const ethereum = (typeof window !== 'undefined' && (window as unknown as { ethereum?: { request: (args: unknown) => Promise<unknown> } }).ethereum) ?? null;
       if (!ethereum) return;
       try {
-        const accounts = await ethereum.request({ method: 'eth_accounts' }) as string[];
-        if (accounts?.length) {
-          const prov = new BrowserProvider(ethereum);
-          const chain = await prov.getNetwork();
-          const signerInstance = await prov.getSigner();
-          setAddress(accounts[0]);
-          setChainId(Number(chain.chainId));
-          setProvider(prov);
-          setSigner(signerInstance);
-        }
+        const accounts = (await ethereum.request({ method: 'eth_accounts' })) as string[];
+        if (!accounts?.length) return;
+        const prov = new BrowserProvider(ethereum);
+        const chain = await prov.getNetwork();
+        const chainIdNum = Number(chain.chainId);
+        if (!isBscChain(chainIdNum)) return;
+        const signerInstance = await prov.getSigner();
+        setAddress(accounts[0]);
+        setChainId(chainIdNum);
+        setProvider(prov);
+        setSigner(signerInstance);
       } catch {
         // Ignore
       }

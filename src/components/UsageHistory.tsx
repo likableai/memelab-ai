@@ -68,10 +68,11 @@ export const UsageHistory: React.FC<UsageHistoryProps> = ({
     return (
       <div
         className="card text-center"
-        style={{ 
-          fontFamily: "'Times New Roman', Times, serif",
+        style={{
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           color: 'var(--text-opacity-60)',
-          padding: 'var(--space-6) var(--space-4)'
+          padding: 'var(--space-6) var(--space-4)',
         }}
       >
         Loading usage history…
@@ -83,10 +84,11 @@ export const UsageHistory: React.FC<UsageHistoryProps> = ({
     return (
       <div
         className="card text-center"
-        style={{ 
-          fontFamily: "'Times New Roman', Times, serif",
+        style={{
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           color: 'var(--color-error-light)',
-          padding: 'var(--space-6) var(--space-4)'
+          padding: 'var(--space-6) var(--space-4)',
         }}
       >
         {error}
@@ -98,10 +100,11 @@ export const UsageHistory: React.FC<UsageHistoryProps> = ({
     return (
       <div
         className="card text-center"
-        style={{ 
-          fontFamily: "'Times New Roman', Times, serif",
+        style={{
+          fontFamily:
+            "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           color: 'var(--text-opacity-60)',
-          padding: 'var(--space-6) var(--space-4)'
+          padding: 'var(--space-6) var(--space-4)',
         }}
       >
         No usage history yet.
@@ -112,17 +115,21 @@ export const UsageHistory: React.FC<UsageHistoryProps> = ({
   return (
     <div
       className="card overflow-hidden"
-      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      style={{
+        fontFamily:
+          "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
     >
       <div 
         className="px-4 py-3 border-b"
         style={{ borderColor: 'var(--border-opacity-10)' }}
       >
-        <h3 
+        <h3
           className="text-sm font-medium"
-          style={{ 
-            fontFamily: "'Times New Roman', Times, serif",
-            color: 'var(--text-opacity-90)'
+          style={{
+            fontFamily:
+              "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: 'var(--text-opacity-90)',
           }}
         >
           Usage history

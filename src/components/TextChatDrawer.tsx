@@ -230,13 +230,14 @@ export const TextChatDrawer: React.FC<TextChatDrawerProps> = ({ isOpen, onClose 
           )}
 
           {error && (
-            <div 
+            <div
               className="p-4 rounded-xl text-sm"
-              style={{ 
-                fontFamily: "'Times New Roman', Times, serif",
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                 backgroundColor: 'var(--color-error-bg)',
                 border: '1px solid var(--color-error)',
-                color: 'var(--color-error-light)'
+                color: 'var(--color-error-light)',
               }}
             >
               {error}
@@ -261,19 +262,21 @@ export const TextChatDrawer: React.FC<TextChatDrawerProps> = ({ isOpen, onClose 
               placeholder={isConnected ? "Type your message..." : "Connect wallet to chat..."}
               disabled={loading || !isConnected}
               className="input flex-1 rounded-full"
-              style={{ 
-                fontFamily: "'Times New Roman', Times, serif",
-                fontSize: 'var(--font-sm)'
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                fontSize: 'var(--font-sm)',
               }}
             />
             <button
               onClick={handleSend}
               disabled={loading || !isConnected || !input.trim()}
               className="btn-primary rounded-full"
-              style={{ 
-                fontFamily: "'Times New Roman', Times, serif",
+              style={{
+                fontFamily:
+                  "var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                 fontSize: 'var(--font-sm)',
-                padding: 'var(--space-2-5) var(--space-4)'
+                padding: 'var(--space-2-5) var(--space-4)',
               }}
               aria-label="Send message"
             >

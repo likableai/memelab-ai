@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, X, Home, MessageCircle, Settings as SettingsIcon, Wallet as WalletIcon, LayoutDashboard, Search, ImageIcon, Twitter, Github, Map, MoreVertical } from 'lucide-react';
+import { Menu, X, Home, MessageCircle, Settings as SettingsIcon, Wallet as WalletIcon, LayoutDashboard, Search, ImageIcon, ImagePlus, Twitter, Github, Map, MoreVertical } from 'lucide-react';
 
 /* Single sidebar layout tokens - one spacing value for all gaps/padding */
 const SIDEBAR_SPACING = 'var(--space-3)';
@@ -52,7 +52,6 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onTextChatOpen, onSettingsOpen }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
@@ -65,177 +64,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTextChatOpen, onSettingsOpen
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  /* Single sidebar: Home first, then Chat, Settings, Dashboard, Explorer. From Dashboard/Explorer, Chat/Settings navigate to home with drawer param. */
-  type NavItem = {
-    id: string;
-    label: string;
-    ariaLabel: string;
-    icon: React.ReactNode;
-    href?: string;
-    onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  };
-  const desktopNavItems: NavItem[] = [
-    {
-      id: 'home',
-      label: 'Home',
-      ariaLabel: 'Home',
-      icon: <Home className="flex-shrink-0" style={ICON_LG} />,
-      href: '/',
-    },
-    {
-      id: 'chat',
-      label: 'Text Chat',
-      ariaLabel: 'Text Chat',
-      icon: <MessageCircle className="flex-shrink-0" style={ICON_LG} />,
-      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof onTextChatOpen === 'function') onTextChatOpen();
-        else router.push('/?drawer=chat');
-      },
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      ariaLabel: 'Settings',
-      icon: <SettingsIcon className="flex-shrink-0" style={ICON_LG} />,
-      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof onSettingsOpen === 'function') onSettingsOpen();
-        else router.push('/?drawer=settings');
-      },
-    },
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      ariaLabel: 'Dashboard',
-      icon: <LayoutDashboard className="flex-shrink-0" style={ICON_LG} />,
-      href: '/dashboard',
-    },
-    {
-      id: 'explorer',
-      label: 'Explorer',
-      ariaLabel: 'Explorer',
-      icon: <Search className="flex-shrink-0" style={ICON_LG} />,
-      href: '/explorer',
-    },
-    {
-      id: 'meme-studio',
-      label: 'Meme Studio',
-      ariaLabel: 'Meme Studio',
-      icon: <ImageIcon className="flex-shrink-0" style={ICON_LG} />,
-      href: '/meme-studio',
-    },
-    {
-      id: 'roadmap',
-      label: 'Roadmap',
-      ariaLabel: 'Roadmap',
-      icon: <Map className="flex-shrink-0" style={ICON_LG} />,
-      href: '/roadmap',
-    },
-  ];
-
   return (
     <>
-      {/* Desktop Sidebar - one sidebar for all pages */}
-      <aside
-        className={`hidden lg:flex lg:flex-col border-r transition-all duration-300 flex-shrink-0 ${
-          isExpanded ? 'w-sidebar' : 'w-sidebar-collapsed'
-        }`}
-        style={SIDEBAR_ASIDE_STYLE}
-      >
-        <div
-          className="border-b flex items-center justify-between"
-          style={SIDEBAR_HEADER_STYLE}
-        >
-          {isExpanded && <h1 className="page-title text-xl">Likable AI</h1>}
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="nav-link p-2 rounded-lg"
-            aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-          >
-            {isExpanded ? <X style={ICON_LG} /> : <Menu style={ICON_LG} />}
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto" style={SIDEBAR_NAV_CONTAINER_STYLE}>
-          <nav className="flex flex-col" style={SIDEBAR_NAV_STYLE}>
-            {desktopNavItems.map((item) => {
-              const itemClassName = `${SIDEBAR_ITEM_CLASS} ${!isExpanded ? 'justify-center' : ''}`;
-              if (item.href) {
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={itemClassName}
-                    style={SIDEBAR_ITEM_STYLE}
-                    aria-label={item.ariaLabel}
-                  >
-                    {item.icon}
-                    {isExpanded && <span className="text-sm">{item.label}</span>}
-                  </Link>
-                );
-              }
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={item.onClick}
-                  className={itemClassName}
-                  style={SIDEBAR_ITEM_STYLE}
-                  aria-label={item.ariaLabel}
-                >
-                  {item.icon}
-                  {isExpanded && <span className="text-sm">{item.label}</span>}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="border-t" style={SIDEBAR_FOOTER_STYLE}>
-          <div className={`flex w-full ${isExpanded ? 'items-center justify-center gap-2' : 'flex-col items-center gap-1'}`} style={isExpanded ? { gap: SIDEBAR_SPACING } : { gap: 'var(--space-1)' }}>
-            <a
-              href="https://x.com/LikableAI"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nav-link rounded-lg flex items-center justify-center shrink-0"
-              style={{ width: 'var(--space-8)', height: 'var(--space-8)', color: 'var(--text-opacity-70)' }}
-              aria-label="Likable AI on X (Twitter)"
-            >
-              <Twitter style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-            </a>
-            <a
-              href="https://github.com/likableai/LIKABLE-AI"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nav-link rounded-lg flex items-center justify-center shrink-0"
-              style={{ width: 'var(--space-8)', height: 'var(--space-8)', color: 'var(--text-opacity-70)' }}
-              aria-label="Likable AI on GitHub"
-            >
-              <Github style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-            </a>
-          </div>
-          {!isExpanded && (
-            <div className="w-full flex justify-center mt-2" style={{ marginTop: 'var(--space-2)' }}>
-              <div
-                className="rounded-lg flex items-center justify-center"
-                style={{
-                  width: 'var(--space-8)',
-                  height: 'var(--space-8)',
-                  backgroundColor: 'var(--bg-opacity-5)',
-                }}
-              >
-                <WalletIcon className="flex-shrink-0" style={{ width: 'var(--icon-md)', height: 'var(--icon-md)', color: 'var(--text-opacity-50)' }} />
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Mobile Bottom Nav - Home, Dashboard, Explorer, Meme + collapsible (Settings, Chats, Roadmap) */}
+      {/* Mobile Bottom Nav - kept for backwards compatibility */}
       {isMobile && (
         <>
           {/* Collapsible panel above the bar */}
@@ -294,6 +125,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTextChatOpen, onSettingsOpen
                 >
                   <Map className="flex-shrink-0" style={ICON_LG} />
                   <span className="text-sm">Roadmap</span>
+                </Link>
+                <Link
+                  href="/image-studio"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`nav-link w-full flex items-center rounded-lg no-underline ${SIDEBAR_ITEM_CLASS}`}
+                  style={SIDEBAR_ITEM_STYLE}
+                  aria-label="Image Studio"
+                >
+                  <ImagePlus className="flex-shrink-0" style={ICON_LG} />
+                  <span className="text-sm">Image Studio</span>
                 </Link>
               </div>
             </div>
