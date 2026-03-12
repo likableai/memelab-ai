@@ -191,6 +191,7 @@ export const TextChatDrawer: React.FC<TextChatDrawerProps> = ({ isOpen, onClose 
                         src={resolveMemeFileUrl(msg.memeUrl)}
                         controls
                         playsInline
+                        crossOrigin="anonymous"
                         className="w-full"
                         style={{ maxHeight: 240 }}
                       />

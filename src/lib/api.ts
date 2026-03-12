@@ -289,6 +289,8 @@ export const getMemeStyles = async (): Promise<string[]> => {
   return response.data;
 };
 
+export type VideoProvider = 'kling' | 'veo' | 'seedance';
+
 export interface GenerateMemeRequest {
   idea: string;
   templateId?: string;
@@ -296,6 +298,10 @@ export interface GenerateMemeRequest {
   style?: string;
   imageProvider?: 'gemini' | 'reve';
   geminiModel?: 'flash' | 'pro';
+  videoProvider?: VideoProvider;
+  videoDuration?: string;
+  videoAspectRatio?: string;
+  videoMode?: 'std' | 'pro';
   topText?: string;
   bottomText?: string;
   referenceUrl?: string;
@@ -429,6 +435,177 @@ export const remixImageStudioBatch = async (
     referenceImageBase64,
     patternIds,
   });
+  return response.data;
+};
+
+// --- Video Studio / Projects API ---
+
+export interface Project {
+  _id: string;
+  title: string;
+  description?: string;
+  avatarId?: string;
+  logoUrl?: string;
+  logoAssetId?: string;
+  brandPalette?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    neutral?: string;
+  };
+  storyNotes?: string;
+  referenceAvatarImageUrl?: string;
+  referenceStyleBoardUrl?: string;
+  defaultVideoProvider?: 'kling' | 'veo';
+  sceneIds?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Scene {
+  _id: string;
+  projectId: string;
+  index?: number;
+  title?: string;
+  summary?: string;
+  script?: string;
+  durationSeconds: number;
+  videoProvider?: 'kling' | 'veo' | 'seedance';
+  referenceImageUrl?: string;
+  videoProviderOverride?: 'kling' | 'veo';
+  status: 'draft' | 'pending' | 'rendering' | 'rendered' | 'failed';
+  renderUrl?: string;
+  fileId?: string;
+  errorMessage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const getProjects = async (): Promise<Project[]> => {
+  const response = await api.get<Project[]>('/projects');
+  return response.data;
+};
+
+export const createProject = async (payload: {
+  title: string;
+  description?: string;
+}): Promise<Project> => {
+  const response = await api.post<Project>('/projects', payload);
+  return response.data;
+};
+
+export const getProjectById = async (id: string): Promise<Project> => {
+  const response = await api.get<Project>(`/projects/${id}`);
+  return response.data;
+};
+
+export const updateProject = async (
+  id: string,
+  payload: Partial<{
+    title: string;
+    description: string;
+    avatarId: string;
+    logoUrl: string;
+    logoAssetId: string;
+    brandPalette: Project['brandPalette'];
+    storyNotes: string;
+    referenceAvatarImageUrl: string;
+    referenceStyleBoardUrl: string;
+    defaultVideoProvider: 'kling' | 'veo';
+  }>
+): Promise<Project> => {
+  const response = await api.patch<Project>(`/projects/${id}`, payload);
+  return response.data;
+};
+
+export const uploadProjectAvatarImage = async (
+  projectId: string,
+  file: File
+): Promise<Project> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post<Project>(`/projects/${projectId}/context-image/avatar`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const uploadProjectStyleBoardImage = async (
+  projectId: string,
+  file: File
+): Promise<Project> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post<Project>(
+    `/projects/${projectId}/context-image/style-board`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  return response.data;
+};
+
+export const createProjectScene = async (
+  projectId: string,
+  payload: {
+    prompt: string;
+    title?: string;
+    summary?: string;
+    script?: string;
+    referenceImageUrl?: string;
+    videoProviderOverride?: 'kling' | 'veo';
+  }
+): Promise<Scene> => {
+  const response = await api.post<Scene>(`/projects/${projectId}/scenes`, payload);
+  return response.data;
+};
+
+export const getProjectScene = async (projectId: string, sceneId: string): Promise<Scene> => {
+  const response = await api.get<Scene>(`/projects/${projectId}/scenes/${sceneId}`);
+  return response.data;
+};
+
+export const generateSceneVideo = async (
+  projectId: string,
+  sceneId: string,
+  payload: { provider?: 'kling' | 'veo'; aspectRatio?: string }
+): Promise<{ url: string }> => {
+  const response = await api.post<{ url: string }>(
+    `/projects/${projectId}/scenes/${sceneId}/generate`,
+    payload
+  );
+  return response.data;
+};
+
+export interface StorySuggestion {
+  title: string;
+  prompt: string;
+  summary?: string;
+}
+
+export const getProjectSuggestions = async (
+  projectId: string
+): Promise<StorySuggestion[]> => {
+  const response = await api.get<{ suggestions: StorySuggestion[] }>(
+    `/projects/${projectId}/suggestions`
+  );
+  return response.data.suggestions || [];
+};
+
+export const updateSceneFeedback = async (
+  projectId: string,
+  sceneId: string,
+  payload: { rating?: number; flags?: string[] }
+) => {
+  const response = await api.patch(
+    `/projects/${projectId}/scenes/${sceneId}/feedback`,
+    payload
+  );
   return response.data;
 };
 

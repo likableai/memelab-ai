@@ -12,6 +12,8 @@ import {
   Sparkles,
   Sliders,
   Grid2X2,
+  History,
+  Trash2,
 } from 'lucide-react';
 import type { MemeFormat } from '@/lib/meme-templates';
 import { MEME_STYLES } from '@/lib/meme-templates';
@@ -23,7 +25,10 @@ import {
   resolveMemeFileUrl,
   type MemeTemplate,
   type MemeImageProvider,
+  type VideoProvider,
 } from '@/lib/api';
+import { useEvmWallet } from '@/components/WalletProvider';
+import { useStudioHistory } from '@/hooks/useStudioHistory';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -126,6 +131,10 @@ export default function MemeStudioPage() {
   const [format, setFormat] = useState<MemeFormat>('image');
   const [imageProvider, setImageProvider] = useState<'gemini' | 'reve'>('gemini');
   const [geminiModel, setGeminiModel] = useState<'flash' | 'pro'>('flash');
+  const [videoProvider, setVideoProvider] = useState<VideoProvider>('kling');
+  const [videoDuration, setVideoDuration] = useState<string>('8');
+  const [videoAspectRatio, setVideoAspectRatio] = useState<string>('1:1');
+  const [videoMode, setVideoMode] = useState<'std' | 'pro'>('std');
   const [providers, setProviders] = useState<MemeImageProvider[]>([]);
   const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [referencePreview, setReferencePreview] = useState<string | null>(null);
@@ -137,9 +146,15 @@ export default function MemeStudioPage() {
   const [error, setError] = useState<string | null>(null);
   const [overlayFontSize, setOverlayFontSize] = useState(32);
   const [overlayColor, setOverlayColor] = useState('#ffffff');
-  const [leftPanel, setLeftPanel] = useState<'templates' | 'settings'>('settings');
+  const [leftPanel, setLeftPanel] = useState<'templates' | 'settings' | 'history'>('settings');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+
+  const { address } = useEvmWallet();
+  const { history, selectedItem, addItem, selectItem, clearHistory } = useStudioHistory({
+    studio: 'meme',
+    walletAddress: address ?? null,
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -147,6 +162,15 @@ export default function MemeStudioPage() {
     if (token && !idea) setIdea(`Create meme about ${token}`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (selectedItem) {
+      setGeneratedUrl(selectedItem.url);
+      setGeneratedFormat((selectedItem.format as 'image' | 'video' | 'gif') || 'image');
+    } else {
+      setGeneratedUrl(null);
+    }
+  }, [selectedItem]);
 
   useEffect(() => { getMemeTemplates().then(setTemplates).catch(() => setTemplates([])); }, []);
   useEffect(() => { getMemeStyles().then(setStyles).catch(() => setStyles(Array.from(MEME_STYLES))); }, []);
@@ -213,6 +237,9 @@ export default function MemeStudioPage() {
         style,
         imageProvider,
         geminiModel,
+        ...(format === 'video' || format === 'gif'
+          ? { videoProvider, videoDuration, videoAspectRatio, videoMode }
+          : {}),
         topText: topText.trim(),
         bottomText: bottomText.trim(),
         ...(referenceUrl.trim() && {
@@ -221,14 +248,20 @@ export default function MemeStudioPage() {
         }),
       };
       const data = await generateMeme(body);
-      if (data.url) { setGeneratedUrl(data.url); setGeneratedFormat(data.format || 'image'); }
+      if (data.url) {
+        addItem({
+          url: data.url,
+          format: data.format || 'image',
+          prompt: idea.trim().slice(0, 120),
+        });
+      }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
       setError(err?.response?.data?.error ?? err?.message ?? 'Generation failed');
     } finally {
       setLoading(false);
     }
-  }, [idea, selectedTemplateId, format, style, imageProvider, geminiModel, topText, bottomText, referenceUrl, referenceType]);
+  }, [idea, selectedTemplateId, format, style, imageProvider, geminiModel, videoProvider, videoDuration, videoAspectRatio, videoMode, topText, bottomText, referenceUrl, referenceType]);
 
   const useTemplate = useCallback((t: MemeTemplate) => {
     setSelectedTemplateId(t.id);
@@ -317,6 +350,7 @@ export default function MemeStudioPage() {
             {([
               { id: 'settings', label: 'Editor', icon: <Sliders style={{ width: 14, height: 14 }} /> },
               { id: 'templates', label: 'Templates', icon: <Grid2X2 style={{ width: 14, height: 14 }} /> },
+              { id: 'history', label: 'History', icon: <History style={{ width: 14, height: 14 }} /> },
             ] as const).map((tab) => (
               <button
                 key={tab.id}
@@ -414,9 +448,49 @@ export default function MemeStudioPage() {
                 </div>
               )}
 
+              {/* Video options (video / GIF only) */}
+              {(format === 'video' || format === 'gif') && (
+                <>
+                  <InlineField label="Video engine">
+                    <select value={videoProvider} onChange={(e) => setVideoProvider(e.target.value as VideoProvider)} style={selectStyle}>
+                      <option value="kling">Kling 3</option>
+                      <option value="veo">Veo 3</option>
+                      <option value="seedance">Seedance 3.0</option>
+                    </select>
+                  </InlineField>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <InlineField label="Duration">
+                      <select value={videoDuration} onChange={(e) => setVideoDuration(e.target.value)} style={selectStyle}>
+                        <option value="5">5s</option>
+                        <option value="8">8s</option>
+                        <option value="10">10s</option>
+                      </select>
+                    </InlineField>
+                    <InlineField label="Aspect ratio">
+                      <select value={videoAspectRatio} onChange={(e) => setVideoAspectRatio(e.target.value)} style={selectStyle}>
+                        <option value="1:1">1:1</option>
+                        <option value="16:9">16:9</option>
+                        <option value="9:16">9:16</option>
+                      </select>
+                    </InlineField>
+                  </div>
+                  <InlineField label="Quality">
+                    <select value={videoMode} onChange={(e) => setVideoMode(e.target.value as 'std' | 'pro')} style={selectStyle}>
+                      <option value="std">Standard</option>
+                      <option value="pro">Pro</option>
+                    </select>
+                  </InlineField>
+                </>
+              )}
+
               {/* Reference */}
               <div>
                 <SectionLabel>Reference (optional)</SectionLabel>
+                {(format === 'video' || format === 'gif') && (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                    Use a <strong>public image URL</strong> for image-to-video.
+                  </p>
+                )}
                 <div
                   style={{
                     padding: '0.875rem',
@@ -593,6 +667,83 @@ export default function MemeStudioPage() {
               )}
             </div>
           )}
+
+          {/* ── HISTORY panel (per-wallet) ── */}
+          {leftPanel === 'history' && (
+            <div style={{ padding: '1rem 1.125rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <SectionLabel>Your generations</SectionLabel>
+                {history.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearHistory}
+                    aria-label="Clear history"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid var(--border)',
+                      borderRadius: '6px',
+                      background: 'transparent',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Trash2 style={{ width: 12, height: 12 }} /> Clear
+                  </button>
+                )}
+              </div>
+              {!address ? (
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Connect your wallet to see history for this account.</p>
+              ) : history.length === 0 ? (
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>No generations yet. Create a meme to see it here.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {history.map((item) => {
+                    const resolved = resolveMemeFileUrl(item.url);
+                    const isSelected = selectedItem?.id === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => selectItem(item.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem',
+                          border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border)'}`,
+                          borderRadius: '8px',
+                          background: isSelected ? 'rgba(0,229,160,0.06)' : 'var(--bg-secondary)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                        }}
+                      >
+                        <div style={{ width: 48, height: 48, flexShrink: 0, borderRadius: '6px', overflow: 'hidden', background: 'var(--bg)' }}>
+                          {item.format === 'image' && <img src={resolved} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                          {(item.format === 'video' || item.format === 'gif') && (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                              {item.format === 'video' ? 'MP4' : 'GIF'}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.prompt || 'Generated meme'}
+                          </p>
+                          <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
+                            {new Date(item.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </aside>
 
         {/* ── RIGHT: canvas / output ── */}
@@ -709,7 +860,7 @@ export default function MemeStudioPage() {
                 }}
               >
                 {generatedFormat === 'video' && (
-                  <video src={resolvedUrl} controls loop playsInline style={{ display: 'block', maxWidth: '100%', height: 'auto' }} />
+                  <video src={resolvedUrl} controls loop playsInline crossOrigin="anonymous" style={{ display: 'block', maxWidth: '100%', height: 'auto' }} />
                 )}
                 {generatedFormat === 'gif' && (
                   <img src={resolvedUrl} alt="Generated meme GIF" style={{ display: 'block', maxWidth: '100%', height: 'auto' }} />

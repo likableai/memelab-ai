@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Video,
   RefreshCw,
+  History,
+  Trash2,
 } from 'lucide-react';
 import {
   getImageStudioPatterns,
@@ -29,6 +31,8 @@ import {
   type MemePattern,
   type MemeIdea,
 } from '@/lib/api';
+import { useEvmWallet } from '@/components/WalletProvider';
+import { useStudioHistory } from '@/hooks/useStudioHistory';
 
 type TabMode = 'avatar' | 'logo' | 'meme';
 type MemeSource = 'gemini-reve' | 'memelord';
@@ -68,6 +72,17 @@ export default function ImageStudioPage() {
   const [remixLoading, setRemixLoading] = useState(false);
   const [patternsLoading, setPatternsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { address } = useEvmWallet();
+  const { history, selectedItem, addItem, selectItem, clearHistory } = useStudioHistory({
+    studio: 'image',
+    walletAddress: address ?? null,
+  });
+
+  useEffect(() => {
+    if (selectedItem) setGeneratedUrl(selectedItem.url);
+    else setGeneratedUrl(null);
+  }, [selectedItem]);
 
   const fetchPatterns = useCallback(async (page = 1) => {
     setPatternsLoading(true);
@@ -148,14 +163,14 @@ export default function ImageStudioPage() {
     setRemixResults([]);
     try {
       const res = await generateImageStudioImage({ prompt: prompt.trim(), aspectRatio: '1:1', mode: activeTab });
-      setGeneratedUrl(res.url);
+      addItem({ url: res.url, format: 'image', prompt: prompt.trim().slice(0, 120) });
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
       setError(err?.response?.data?.error ?? err?.message ?? 'Generation failed');
     } finally {
       setLoading(false);
     }
-  }, [prompt, activeTab, memeSource, fetchIdeas]);
+  }, [prompt, activeTab, memeSource, fetchIdeas, addItem]);
 
   const captureImageAsBase64 = useCallback(async (url: string): Promise<string | null> => {
     try {
@@ -485,6 +500,57 @@ export default function ImageStudioPage() {
               )}
             </div>
           )}
+
+          {/* History (per-wallet) */}
+          <div style={{ borderTop: '1px solid var(--border)', padding: '1rem 1.125rem', marginTop: 'auto', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', margin: 0, fontFamily: 'var(--font-mono)' }}>
+                History
+              </p>
+              {history.length > 0 && (
+                <button type="button" onClick={clearHistory} aria-label="Clear history" style={{ display: 'inline-flex', padding: '0.2rem', border: 'none', background: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  <Trash2 style={{ width: 12, height: 12 }} />
+                </button>
+              )}
+            </div>
+            {!address ? (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Connect wallet to see history.</p>
+            ) : history.length === 0 ? (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>No images yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', maxHeight: '180px', overflowY: 'auto' }}>
+                {history.map((item) => {
+                  const isSelected = selectedItem?.id === item.id;
+                  const resolved = resolveImageStudioFileUrl(item.url);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => selectItem(item.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.375rem 0.5rem',
+                        border: `1px solid ${isSelected ? 'var(--accent-primary)' : 'var(--border)'}`,
+                        borderRadius: '6px',
+                        background: isSelected ? 'rgba(0,229,160,0.06)' : 'var(--bg-secondary)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: '5px', overflow: 'hidden', background: 'var(--bg)' }}>
+                        <img src={resolved} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <span style={{ flex: 1, minWidth: 0, fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.prompt || 'Image'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </aside>
 
         {/* ── RIGHT PANEL: output canvas ── */}

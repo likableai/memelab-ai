@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { WalletButton } from './WalletButton';
-import { Menu, X, ChevronDown, ImageIcon, Wand2, Bot, LayoutDashboard, Search, Map, Globe } from 'lucide-react';
+import { Menu, X, ChevronDown, ImageIcon, Wand2, Bot, LayoutDashboard, Search, Map, Globe, Video } from 'lucide-react';
 
 // ─── Data ───────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,14 @@ const AI_TOOLS = [
     href: '/meme-studio',
     icon: ImageIcon,
     label: 'Meme Studio',
-    desc: 'Video & GIF meme creation',
+    desc: 'Image, video & GIF meme creation',
+    soon: false,
+  },
+  {
+    href: '/video-studio',
+    icon: Video,
+    label: 'Video Studio',
+    desc: 'AI video from text or image',
     soon: false,
   },
   {
