@@ -21,8 +21,9 @@ import {
   getMemeTemplates,
   getMemeStyles,
   getMemeProviders,
-  generateMeme,
   resolveMemeFileUrl,
+  generateSupermemeTextMemes,
+  type SupermemeTextMeme,
   type MemeTemplate,
   type MemeImageProvider,
   type VideoProvider,
@@ -142,6 +143,8 @@ export default function MemeStudioPage() {
   const [referenceType, setReferenceType] = useState<'image' | 'gif' | 'video' | null>(null);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [generatedFormat, setGeneratedFormat] = useState<string>('image');
+  const [supermemeOptions, setSupermemeOptions] = useState<SupermemeTextMeme[]>([]);
+  const [selectedSupermemeIndex, setSelectedSupermemeIndex] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [overlayFontSize, setOverlayFontSize] = useState(32);
@@ -225,43 +228,43 @@ export default function MemeStudioPage() {
   }, [generatedUrl, generatedFormat, drawOverlay]);
 
   const generate = useCallback(async () => {
-    if (!idea.trim()) { setError('Enter a meme idea or caption.'); return; }
+    if (!idea.trim()) {
+      setError('Enter a meme idea or caption.');
+      return;
+    }
+    if (format !== 'image') {
+      setError('Editable Supermeme memes currently support image format only.');
+      return;
+    }
     setLoading(true);
     setError(null);
     setGeneratedUrl(null);
+    setSupermemeOptions([]);
     try {
-      const body = {
-        idea: idea.trim(),
-        templateId: selectedTemplateId,
-        format,
-        style,
-        imageProvider,
-        geminiModel,
-        ...(format === 'video' || format === 'gif'
-          ? { videoProvider, videoDuration, videoAspectRatio, videoMode }
-          : {}),
-        topText: topText.trim(),
-        bottomText: bottomText.trim(),
-        ...(referenceUrl.trim() && {
-          referenceUrl: referenceUrl.trim(),
-          referenceType: referenceType || ('image' as const),
-        }),
-      };
-      const data = await generateMeme(body);
-      if (data.url) {
-        addItem({
-          url: data.url,
-          format: data.format || 'image',
-          prompt: idea.trim().slice(0, 120),
-        });
+      const res = await generateSupermemeTextMemes(idea.trim());
+      if (!res.memes || res.memes.length === 0) {
+        setError('No memes were returned from Supermeme.ai.');
+        return;
       }
+      setSupermemeOptions(res.memes);
+      setSelectedSupermemeIndex(0);
+      const first = res.memes[0];
+      setTopText(first.caption || '');
+      setBottomText('');
+      setGeneratedFormat('image');
+      setGeneratedUrl(first.image);
+      addItem({
+        url: first.image,
+        format: 'image',
+        prompt: idea.trim().slice(0, 120),
+      });
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
       setError(err?.response?.data?.error ?? err?.message ?? 'Generation failed');
     } finally {
       setLoading(false);
     }
-  }, [idea, selectedTemplateId, format, style, imageProvider, geminiModel, videoProvider, videoDuration, videoAspectRatio, videoMode, topText, bottomText, referenceUrl, referenceType]);
+  }, [idea, format, addItem]);
 
   const useTemplate = useCallback((t: MemeTemplate) => {
     setSelectedTemplateId(t.id);
@@ -879,6 +882,50 @@ export default function MemeStudioPage() {
                   </>
                 )}
               </div>
+              {/* Supermeme variant selector */}
+              {supermemeOptions.length > 1 && (
+                <div
+                  style={{
+                    marginTop: '0.75rem',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
+                  }}
+                >
+                  {supermemeOptions.map((meme, idx) => {
+                    const isSelected = idx === selectedSupermemeIndex;
+                    return (
+                      <button
+                        key={`${meme.image}-${idx}`}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSupermemeIndex(idx);
+                          setGeneratedUrl(meme.image);
+                          setTopText(meme.caption || '');
+                          setBottomText('');
+                        }}
+                        style={{
+                          borderRadius: '8px',
+                          border: isSelected ? '2px solid var(--accent-primary)' : '1px solid var(--border)',
+                          padding: 0,
+                          overflow: 'hidden',
+                          background: 'var(--bg-secondary)',
+                          cursor: 'pointer',
+                          width: 88,
+                          height: 88,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <img
+                          src={meme.image}
+                          alt={meme.caption || 'Meme option'}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </main>

@@ -708,6 +708,86 @@ export const getMemelordIdeas = async (
   return response.data;
 };
 
+// --- Supermeme.ai helpers (via backend /memelord routes) ---
+
+export interface SupermemeImageRequest {
+  text: string;
+  count?: number;
+  aspectRatio?: string;
+  paddingColor?: string;
+}
+
+/** Quick, non-editable Supermeme images (captions baked into the image). */
+export const createSupermemeImage = async (
+  params: SupermemeImageRequest
+): Promise<MemelordMemeResponse> => {
+  const body: MemelordMemeParams & { aspectRatio?: string; paddingColor?: string } = {
+    prompt: params.text,
+    count: params.count,
+  };
+  if (params.aspectRatio) {
+    (body as any).aspectRatio = params.aspectRatio;
+  }
+  if (params.paddingColor) {
+    (body as any).paddingColor = params.paddingColor;
+  }
+  const response = await api.post<MemelordMemeResponse>('/memelord/meme', body);
+  return response.data;
+};
+
+export interface SupermemeTextMeme {
+  caption: string;
+  image: string;
+}
+
+export interface SupermemeTextMemeResponse {
+  memes: SupermemeTextMeme[];
+  searchEmotion?: string;
+  originalText: string;
+  generatedCaptions?: string[];
+  languageCode?: string;
+}
+
+/** Editable Supermeme memes: separate base image + caption text. */
+export const generateSupermemeTextMemes = async (
+  text: string
+): Promise<SupermemeTextMemeResponse> => {
+  const response = await api.post<SupermemeTextMemeResponse>('/memelord/text-meme', { text });
+  return response.data;
+};
+
+export interface SupermemeMinimalistRequest {
+  text: string;
+  count?: number;
+  aspectRatio?: string;
+}
+
+export interface SupermemeMinimalistResponse {
+  images: string[];
+}
+
+/** Minimalist visual illustrations from text (comparisons, metaphors, etc.). */
+export const generateSupermemeMinimalist = async (
+  params: SupermemeMinimalistRequest
+): Promise<SupermemeMinimalistResponse> => {
+  const response = await api.post<SupermemeMinimalistResponse>('/memelord/minimalist', params);
+  return response.data;
+};
+
+export interface SupermemeTemplateSearchResult {
+  templates: string[];
+}
+
+/** Search Supermeme meme templates by query string. */
+export const searchSupermemeTemplates = async (
+  query: string
+): Promise<SupermemeTemplateSearchResult> => {
+  const response = await api.get<SupermemeTemplateSearchResult>('/memelord/templates/search', {
+    params: { query },
+  });
+  return response.data;
+};
+
 /** Resolve image-studio file URL for display/download. */
 export function resolveImageStudioFileUrl(url: string): string {
   if (typeof url !== 'string' || !url) return url;
