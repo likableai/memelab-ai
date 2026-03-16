@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { WalletButton } from './WalletButton';
+import { ThemeToggle } from './ThemeToggle';
 import { Menu, X, ChevronDown, ImageIcon, Wand2, Bot, LayoutDashboard, Search, Map, Globe, Video } from 'lucide-react';
 
 // ─── Data ───────────────────────────────────────────────────────────────────
@@ -353,8 +354,12 @@ const MobileDrawer: React.FC<{ open: boolean; onClose: () => void }> = ({ open, 
           </div>
         </div>
 
-        {/* Wallet at bottom */}
-        <div style={{ marginTop: 'auto', padding: 'var(--space-4) var(--space-5)', borderTop: '1px solid var(--border)' }}>
+        {/* Theme + Wallet at bottom */}
+        <div style={{ marginTop: 'auto', padding: 'var(--space-4) var(--space-5)', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+            <span style={{ fontSize: 'var(--font-xs)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Theme</span>
+            <ThemeToggle />
+          </div>
           <WalletButton />
         </div>
       </div>
@@ -538,6 +543,7 @@ export const Navbar = () => {
 
           {/* Right side */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0 }}>
+            <ThemeToggle />
             {/* Wallet — hidden on mobile */}
             <div className="hidden md:flex">
               <WalletButton />
