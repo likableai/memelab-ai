@@ -438,74 +438,7 @@ export default function ImageStudioPage() {
             </div>
           )}
 
-          {/* Reference image (Reve AI only) */}
-          {supportsReferenceImage && (
-            <div style={{ padding: '0.875rem 1.125rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                Reference image
-              </p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                Optional. Upload a picture to guide generation (Nano Banana 2 or Reve AI).
-              </p>
-              {referencePreviewUrl ? (
-                <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-                  <img src={referencePreviewUrl} alt="Reference" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
-                  <button
-                    type="button"
-                    onClick={clearReferenceImage}
-                    style={{
-                      position: 'absolute',
-                      top: '0.35rem',
-                      right: '0.35rem',
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      background: 'rgba(0,0,0,0.6)',
-                      color: '#fff',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 0,
-                    }}
-                    aria-label="Remove reference"
-                  >
-                    <X style={{ width: 14, height: 14 }} />
-                  </button>
-                </div>
-              ) : (
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    padding: '1rem',
-                    borderRadius: '10px',
-                    border: '1px dashed var(--border)',
-                    background: 'var(--bg-secondary)',
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.8125rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'border-color 150ms ease',
-                  }}
-                >
-                  <Upload style={{ width: 18, height: 18 }} />
-                  Choose image
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleReferenceFile}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              )}
-            </div>
-          )}
-
-          {/* Prompt area */}
+          {/* Prompt area (chatbox) with inline reference upload icon */}
           <div style={{ padding: '0.875rem 1.125rem', flexShrink: 0 }}>
             <label
               htmlFor="img-prompt"
@@ -513,32 +446,97 @@ export default function ImageStudioPage() {
             >
               Prompt
             </label>
-            <textarea
-              id="img-prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={
-                activeTab === 'avatar' ? 'A friendly crypto mascot, orange fur, sunglasses...'
-                : activeTab === 'logo' ? 'MemeClaw, minimal brand mark, dark theme...'
-                : 'Pepe celebrating on the moon...'
-              }
-              rows={4}
+            <div
               style={{
-                width: '100%',
                 borderRadius: '10px',
                 border: '1px solid var(--border)',
-                padding: '0.75rem',
-                fontSize: '0.875rem',
                 background: 'var(--bg-secondary)',
-                color: 'var(--text)',
-                resize: 'none',
-                outline: 'none',
-                lineHeight: 1.6,
+                overflow: 'hidden',
                 transition: 'border-color 150ms ease',
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent-primary)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-            />
+            >
+              <textarea
+                id="img-prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder={
+                  activeTab === 'avatar' ? 'A friendly crypto mascot, orange fur, sunglasses...'
+                  : activeTab === 'logo' ? 'MemeClaw, minimal brand mark, dark theme...'
+                  : 'Pepe celebrating on the moon...'
+                }
+                rows={4}
+                style={{
+                  width: '100%',
+                  border: 'none',
+                  padding: '0.75rem',
+                  fontSize: '0.875rem',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  resize: 'none',
+                  outline: 'none',
+                  lineHeight: 1.6,
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => (e.currentTarget.closest('div') as HTMLElement).style.borderColor = 'var(--accent-primary)'}
+                onBlur={(e) => (e.currentTarget.closest('div') as HTMLElement).style.borderColor = 'var(--border)'}
+              />
+              {supportsReferenceImage && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem 0.5rem', borderTop: '1px solid var(--border)' }}>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 32,
+                      height: 32,
+                      borderRadius: '8px',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      transition: 'color 150ms ease, background 150ms ease',
+                    }}
+                    title="Attach reference image"
+                  >
+                    <Upload style={{ width: 18, height: 18 }} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleReferenceFile}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  {referencePreviewUrl && (
+                    <>
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <img src={referencePreviewUrl} alt="Ref" style={{ width: 32, height: 32, borderRadius: '6px', objectFit: 'cover', display: 'block' }} />
+                        <button
+                          type="button"
+                          onClick={clearReferenceImage}
+                          style={{
+                            position: 'absolute',
+                            top: -4,
+                            right: -4,
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: 'rgba(0,0,0,0.7)',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 0,
+                          }}
+                          aria-label="Remove reference"
+                        >
+                          <X style={{ width: 10, height: 10 }} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             <button
               type="button"
@@ -754,14 +752,32 @@ export default function ImageStudioPage() {
                 </button>
               ))}
             </div>
-            {/* Prompt */}
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe what you want to generate..."
-              rows={2}
-              style={{ width: '100%', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.625rem', fontSize: '0.875rem', background: 'var(--bg-secondary)', color: 'var(--text)', resize: 'none', outline: 'none' }}
-            />
+            {/* Prompt (chatbox) with inline attach icon */}
+            <div style={{ borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-secondary)', overflow: 'hidden' }}>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe what you want to generate..."
+                rows={2}
+                style={{ width: '100%', border: 'none', padding: '0.625rem', fontSize: '0.875rem', background: 'transparent', color: 'var(--text)', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
+              />
+              {supportsReferenceImage && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.5rem 0.5rem', borderTop: '1px solid var(--border)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '6px', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Attach reference image">
+                    <Upload style={{ width: 16, height: 16 }} />
+                    <input type="file" accept="image/*" onChange={handleReferenceFile} style={{ display: 'none' }} />
+                  </label>
+                  {referencePreviewUrl && (
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <img src={referencePreviewUrl} alt="Ref" style={{ width: 28, height: 28, borderRadius: '6px', objectFit: 'cover', display: 'block' }} />
+                      <button type="button" onClick={clearReferenceImage} style={{ position: 'absolute', top: -3, right: -3, width: 14, height: 14, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} aria-label="Remove reference">
+                        <X style={{ width: 8, height: 8 }} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               onClick={handleGenerate}
