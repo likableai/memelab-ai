@@ -159,7 +159,7 @@ export const CompanionInterface: React.FC = () => {
             state={state}
             audioLevel={audioLevel}
             frequencyData={frequencyData}
-            characterImageUrl="/companioni.jpg"
+            characterImageUrl="/image.jpg"
           />
         </div>
 

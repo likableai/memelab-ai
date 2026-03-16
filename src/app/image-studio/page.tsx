@@ -17,6 +17,8 @@ import {
   RefreshCw,
   History,
   Trash2,
+  Upload,
+  X,
 } from 'lucide-react';
 import {
   getImageStudioPatterns,
@@ -64,6 +66,8 @@ export default function ImageStudioPage() {
   const [remixResults, setRemixResults] = useState<Array<{ patternId: string; url: string }>>([]);
   const [imageProvider, setImageProvider] = useState<ImageStudioProvider>('nano_banana_2');
   const [memeSource, setMemeSource] = useState<MemeSource>('nano_banana_2');
+  const [referenceImageBase64, setReferenceImageBase64] = useState<string | null>(null);
+  const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
   const [memelordResults, setMemelordResults] = useState<Array<{ url: string; template_name?: string }>>([]);
   const [videoJobs, setVideoJobs] = useState<Array<{ job_id: string; template_name?: string; caption?: string }>>([]);
   const [ideas, setIdeas] = useState<MemeIdea[]>([]);
@@ -85,6 +89,38 @@ export default function ImageStudioPage() {
     if (selectedItem) setGeneratedUrl(selectedItem.url);
     else setGeneratedUrl(null);
   }, [selectedItem]);
+
+  const clearReferenceImage = useCallback(() => {
+    if (referencePreviewUrl) URL.revokeObjectURL(referencePreviewUrl);
+    setReferencePreviewUrl(null);
+    setReferenceImageBase64(null);
+  }, [referencePreviewUrl]);
+
+  const handleReferenceFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !file.type.startsWith('image/')) return;
+    if (referencePreviewUrl) URL.revokeObjectURL(referencePreviewUrl);
+    const url = URL.createObjectURL(file);
+    setReferencePreviewUrl(url);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      setReferenceImageBase64(base64 || null);
+    };
+    reader.readAsDataURL(file);
+  }, [referencePreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (referencePreviewUrl) URL.revokeObjectURL(referencePreviewUrl);
+    };
+  }, [referencePreviewUrl]);
+
+  const supportsReferenceImage =
+    (activeTab !== 'meme' && imageProvider === 'reve_ai') ||
+    (activeTab === 'meme' && memeSource === 'reve_ai');
 
   const fetchPatterns = useCallback(async (page = 1) => {
     setPatternsLoading(true);
@@ -171,6 +207,7 @@ export default function ImageStudioPage() {
         aspectRatio: '1:1',
         mode: activeTab,
         provider,
+        ...(referenceImageBase64 && provider === 'reve_ai' ? { referenceImageBase64 } : {}),
       });
       addItem({ url: res.url, format: 'image', prompt: prompt.trim().slice(0, 120) });
     } catch (e: unknown) {
@@ -179,7 +216,7 @@ export default function ImageStudioPage() {
     } finally {
       setLoading(false);
     }
-  }, [prompt, activeTab, memeSource, imageProvider, fetchIdeas, addItem]);
+  }, [prompt, activeTab, memeSource, imageProvider, referenceImageBase64, fetchIdeas, addItem]);
 
   const captureImageAsBase64 = useCallback(async (url: string): Promise<string | null> => {
     try {
@@ -398,6 +435,73 @@ export default function ImageStudioPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Reference image (Reve AI only) */}
+          {supportsReferenceImage && (
+            <div style={{ padding: '0.875rem 1.125rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Reference image
+              </p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Optional. Upload a picture to guide generation (Reve AI).
+              </p>
+              {referencePreviewUrl ? (
+                <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+                  <img src={referencePreviewUrl} alt="Reference" style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
+                  <button
+                    type="button"
+                    onClick={clearReferenceImage}
+                    style={{
+                      position: 'absolute',
+                      top: '0.35rem',
+                      right: '0.35rem',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: 'rgba(0,0,0,0.6)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 0,
+                    }}
+                    aria-label="Remove reference"
+                  >
+                    <X style={{ width: 14, height: 14 }} />
+                  </button>
+                </div>
+              ) : (
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    border: '1px dashed var(--border)',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'border-color 150ms ease',
+                  }}
+                >
+                  <Upload style={{ width: 18, height: 18 }} />
+                  Choose image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleReferenceFile}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              )}
             </div>
           )}
 

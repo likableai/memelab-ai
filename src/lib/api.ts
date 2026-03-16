@@ -396,6 +396,8 @@ export interface GenerateImageStudioParams {
   aspectRatio?: string;
   mode?: 'avatar' | 'logo' | 'meme';
   provider?: ImageStudioProvider;
+  /** Optional reference image (base64) for providers that support it (e.g. Reve AI remix). */
+  referenceImageBase64?: string;
 }
 
 export interface GenerateImageStudioResponse {
