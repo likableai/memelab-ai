@@ -158,7 +158,8 @@ export default function ImageStudioPage() {
       }
       return;
     }
-    const provider: ImageStudioProvider = activeTab === 'meme' ? memeSource : imageProvider;
+    const provider: ImageStudioProvider =
+      activeTab === 'meme' ? (memeSource as ImageStudioProvider) : imageProvider;
     setLoading(true);
     setError(null);
     setGeneratedUrl(null);
