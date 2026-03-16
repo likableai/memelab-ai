@@ -200,7 +200,7 @@ export const getTokenStats = async () => {
   return response.data;
 };
 
-/** Search tokens via Jupiter Ultra API (Explorer). */
+/** Search BNB Chain tokens via DexScreener (Explorer). */
 export const searchTokens = async (query: string) => {
   const response = await api.get('/token/search', { params: { query } });
   return response.data;
@@ -389,10 +389,13 @@ export const getImageStudioThemes = async (): Promise<string[]> => {
   return response.data;
 };
 
+export type ImageStudioProvider = 'nano_banana_2' | 'reve_ai';
+
 export interface GenerateImageStudioParams {
   prompt: string;
   aspectRatio?: string;
   mode?: 'avatar' | 'logo' | 'meme';
+  provider?: ImageStudioProvider;
 }
 
 export interface GenerateImageStudioResponse {

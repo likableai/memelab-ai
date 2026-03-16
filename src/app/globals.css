@@ -215,6 +215,22 @@
   --dropdown-item-selected-border: var(--color-info);
 }
 
+[data-theme="light"] {
+  --bg: #F5F7FA;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #E8ECF1;
+  --text: #0F1419;
+  --text-secondary: #536471;
+  --border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-shadow: rgba(0, 0, 0, 0.12);
+  --bg-elevated: #FFFFFF;
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --accent-primary: #00B87C;
+  --accent-secondary: #00C98A;
+}
+
 [data-theme="dark"] {
   --bg: #080B12;
   --bg-secondary: #0E1117;

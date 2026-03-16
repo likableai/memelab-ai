@@ -80,6 +80,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('theme');var d=document.documentElement;if(t==='light'||t==='dark')d.setAttribute('data-theme',t);else{var m=window.matchMedia('(prefers-color-scheme: dark)');d.setAttribute('data-theme',m.matches?'dark':'light');}})();`,
+          }}
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

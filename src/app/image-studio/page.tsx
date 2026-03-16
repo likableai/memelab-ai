@@ -30,12 +30,13 @@ import {
   getMemelordIdeas,
   type MemePattern,
   type MemeIdea,
+  type ImageStudioProvider,
 } from '@/lib/api';
 import { useEvmWallet } from '@/components/WalletProvider';
 import { useStudioHistory } from '@/hooks/useStudioHistory';
 
 type TabMode = 'avatar' | 'logo' | 'meme';
-type MemeSource = 'gemini-reve' | 'memelord';
+type MemeSource = 'nano_banana_2' | 'reve_ai' | 'memelord';
 
 const PATTERNS_PAGE_SIZE = 24;
 const MAX_BATCH_REMIX = 20;
@@ -61,7 +62,8 @@ export default function ImageStudioPage() {
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [selectedImageBase64, setSelectedImageBase64] = useState<string | null>(null);
   const [remixResults, setRemixResults] = useState<Array<{ patternId: string; url: string }>>([]);
-  const [memeSource, setMemeSource] = useState<MemeSource>('gemini-reve');
+  const [imageProvider, setImageProvider] = useState<ImageStudioProvider>('nano_banana_2');
+  const [memeSource, setMemeSource] = useState<MemeSource>('nano_banana_2');
   const [memelordResults, setMemelordResults] = useState<Array<{ url: string; template_name?: string }>>([]);
   const [videoJobs, setVideoJobs] = useState<Array<{ job_id: string; template_name?: string; caption?: string }>>([]);
   const [ideas, setIdeas] = useState<MemeIdea[]>([]);
@@ -156,13 +158,19 @@ export default function ImageStudioPage() {
       }
       return;
     }
+    const provider: ImageStudioProvider = activeTab === 'meme' ? memeSource : imageProvider;
     setLoading(true);
     setError(null);
     setGeneratedUrl(null);
     setMemelordResults([]);
     setRemixResults([]);
     try {
-      const res = await generateImageStudioImage({ prompt: prompt.trim(), aspectRatio: '1:1', mode: activeTab });
+      const res = await generateImageStudioImage({
+        prompt: prompt.trim(),
+        aspectRatio: '1:1',
+        mode: activeTab,
+        provider,
+      });
       addItem({ url: res.url, format: 'image', prompt: prompt.trim().slice(0, 120) });
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -170,7 +178,7 @@ export default function ImageStudioPage() {
     } finally {
       setLoading(false);
     }
-  }, [prompt, activeTab, memeSource, fetchIdeas, addItem]);
+  }, [prompt, activeTab, memeSource, imageProvider, fetchIdeas, addItem]);
 
   const captureImageAsBase64 = useCallback(async (url: string): Promise<string | null> => {
     try {
@@ -317,23 +325,63 @@ export default function ImageStudioPage() {
             ))}
           </div>
 
-          {/* Meme source selector */}
-          {activeTab === 'meme' && (
+          {/* Image provider: Nano Banana 2 / Reve AI (avatar & logo) */}
+          {(activeTab === 'avatar' || activeTab === 'logo') && (
             <div style={{ padding: '0.875rem 1.125rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
               <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                 Engine
               </p>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {(['gemini-reve', 'memelord'] as const).map((src) => (
+                {(['nano_banana_2', 'reve_ai'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setImageProvider(p)}
+                    style={{
+                      flex: 1,
+                      padding: '0.4rem 0',
+                      border: `1px solid ${imageProvider === p ? 'rgba(0,229,160,0.3)' : 'var(--border)'}`,
+                      borderRadius: '8px',
+                      background: imageProvider === p ? 'rgba(0,229,160,0.08)' : 'transparent',
+                      color: imageProvider === p ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                      fontSize: '0.8125rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 150ms ease',
+                    }}
+                  >
+                    {p === 'nano_banana_2' ? 'Nano Banana 2' : 'Reve AI'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Meme source selector: Nano Banana 2 / Reve AI / Memelord */}
+          {activeTab === 'meme' && (
+            <div style={{ padding: '0.875rem 1.125rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Engine
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {(['nano_banana_2', 'reve_ai', 'memelord'] as const).map((src) => (
                   <button
                     key={src}
                     type="button"
                     onClick={() => {
-                      if (src === 'gemini-reve') { setMemeSource('gemini-reve'); setMemelordResults([]); }
-                      else { setMemeSource('memelord'); setGeneratedUrl(null); setSelectedImageBase64(null); setRemixResults([]); }
+                      if (src === 'memelord') {
+                        setMemeSource('memelord');
+                        setGeneratedUrl(null);
+                        setSelectedImageBase64(null);
+                        setRemixResults([]);
+                      } else {
+                        setMemeSource(src);
+                        setMemelordResults([]);
+                      }
                     }}
                     style={{
-                      flex: 1,
+                      flex: '1 1 0',
+                      minWidth: '90px',
                       padding: '0.4rem 0',
                       border: `1px solid ${memeSource === src ? 'rgba(0,229,160,0.3)' : 'var(--border)'}`,
                       borderRadius: '8px',
@@ -345,7 +393,7 @@ export default function ImageStudioPage() {
                       transition: 'all 150ms ease',
                     }}
                   >
-                    {src === 'gemini-reve' ? 'Gemini' : 'Memelord'}
+                    {src === 'nano_banana_2' ? 'Nano Banana 2' : src === 'reve_ai' ? 'Reve AI' : 'Memelord'}
                   </button>
                 ))}
               </div>
