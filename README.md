@@ -1,4 +1,4 @@
-# Likable - AI Trading Companion Platform
+# memeclaw - AI Trading Companion Platform
 
 Likable is a Web3-native **AI trading companion** platform where users pay for AI services using a BNB Smart Chain (BSC) BEP-20 token. It features dynamic USD-based pricing and MetaMask wallet support.
 
