@@ -119,8 +119,8 @@ export default function ImageStudioPage() {
   }, [referencePreviewUrl]);
 
   const supportsReferenceImage =
-    (activeTab !== 'meme' && imageProvider === 'reve_ai') ||
-    (activeTab === 'meme' && memeSource === 'reve_ai');
+    (activeTab !== 'meme' && (imageProvider === 'reve_ai' || imageProvider === 'nano_banana_2')) ||
+    (activeTab === 'meme' && (memeSource === 'reve_ai' || memeSource === 'nano_banana_2'));
 
   const fetchPatterns = useCallback(async (page = 1) => {
     setPatternsLoading(true);
@@ -207,7 +207,7 @@ export default function ImageStudioPage() {
         aspectRatio: '1:1',
         mode: activeTab,
         provider,
-        ...(referenceImageBase64 && provider === 'reve_ai' ? { referenceImageBase64 } : {}),
+        ...(referenceImageBase64 ? { referenceImageBase64 } : {}),
       });
       addItem({ url: res.url, format: 'image', prompt: prompt.trim().slice(0, 120) });
     } catch (e: unknown) {
@@ -445,7 +445,7 @@ export default function ImageStudioPage() {
                 Reference image
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                Optional. Upload a picture to guide generation (Reve AI).
+                Optional. Upload a picture to guide generation (Nano Banana 2 or Reve AI).
               </p>
               {referencePreviewUrl ? (
                 <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
