@@ -7,8 +7,6 @@ import { WalletButton } from './WalletButton';
 import { ThemeToggle } from './ThemeToggle';
 import { Menu, X, ChevronDown, ImageIcon, Wand2, Bot, LayoutDashboard, Search, Map, Globe, Video } from 'lucide-react';
 
-// ─── Data ───────────────────────────────────────────────────────────────────
-
 const AI_TOOLS = [
   {
     href: '/meme-studio',
@@ -433,23 +431,19 @@ export const Navbar = () => {
               flexShrink: 0,
             }}
           >
-            <div
+            <img
+              src="/image.jpg"
+              alt="MemeClaw AI"
+              width={28}
+              height={28}
               style={{
                 width: '28px',
                 height: '28px',
                 borderRadius: 'var(--radius-sm)',
-                background: 'var(--gradient-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '10px',
-                fontWeight: 700,
-                color: '#020617',
-                letterSpacing: '0.02em',
+                objectFit: 'contain',
+                display: 'block',
               }}
-            >
-              MC
-            </div>
+            />
             <span
               style={{
                 fontWeight: 700,
