@@ -23,6 +23,13 @@ const AI_TOOLS = [
     soon: false,
   },
   {
+    href: '/movie-studio',
+    icon: Video,
+    label: 'Movie Studio',
+    desc: 'Cinematic multi-scene projects',
+    soon: false,
+  },
+  {
     href: '/image-studio',
     icon: Wand2,
     label: 'Image Studio',

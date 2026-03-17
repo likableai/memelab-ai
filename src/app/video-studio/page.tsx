@@ -1,988 +1,379 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AppLayout } from '@/components/AppLayout';
-import { Plus, Play, RefreshCw, Trash2, Loader2, Film, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ImageUp, Loader2, Sparkles, Video } from 'lucide-react';
 import {
-  getProjects,
-  createProject,
-  getProjectById,
-  updateProject,
-  uploadProjectAvatarImage,
-  uploadProjectStyleBoardImage,
-  createProjectScene,
-  generateSceneVideo,
-  getProjectScene,
-  getProjectSuggestions,
-  updateSceneFeedback,
   resolveImageStudioFileUrl,
-  type Project,
-  type Scene,
-  type StorySuggestion,
+  generateVideoClip,
+  uploadVideoReferenceImage,
 } from '@/lib/api';
 
 export default function VideoStudioPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [scenes, setScenes] = useState<Scene[]>([]);
-  const [newProjectTitle, setNewProjectTitle] = useState('');
-  const [sceneStart, setSceneStart] = useState('');
-  const [sceneMiddle, setSceneMiddle] = useState('');
-  const [sceneEnd, setSceneEnd] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [sceneProviderOverride, setSceneProviderOverride] = useState<'' | 'kling' | 'veo'>('');
-  const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [provider, setProvider] = useState<'kling' | 'veo'>('kling');
+  const [aspectRatio, setAspectRatio] = useState<'1:1' | '16:9' | '9:16'>('16:9');
+  const [durationSeconds, setDurationSeconds] = useState<number>(8);
+  const [style, setStyle] = useState<
+    '' | 'cinematic' | 'studio_ghibli' | 'anime_cinematic' | 'hyperreal_gritty'
+  >('');
+  const [referenceUrl, setReferenceUrl] = useState('');
+  const [uploadingRef, setUploadingRef] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [sceneLoadingId, setSceneLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<StorySuggestion[]>([]);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const [projectAvatarRef, setProjectAvatarRef] = useState('');
-  const [projectStyleBoardRef, setProjectStyleBoardRef] = useState('');
-  const [projectDefaultProvider, setProjectDefaultProvider] = useState<'' | 'kling' | 'veo'>('');
-  const avatarFileInputRef = React.useRef<HTMLInputElement | null>(null);
-  const styleBoardFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [resultProvider, setResultProvider] = useState<'kling' | 'veo' | null>(null);
 
-  const loadProjects = useCallback(async () => {
-    try {
-      const list = await getProjects();
-      setProjects(list);
-      if (!selectedProjectId && list.length > 0) {
-        setSelectedProjectId(list[0]._id);
-      }
-    } catch {
-      setProjects([]);
-    }
-  }, [selectedProjectId]);
+  const canGenerate = useMemo(() => prompt.trim().length > 0 && !loading, [prompt, loading]);
 
-  const loadProjectScenes = useCallback(
-    async (projectId: string) => {
-      try {
-        const project = await getProjectById(projectId);
-        setSelectedProjectId(project._id);
-        setSelectedProject(project);
-        setProjectAvatarRef(project.referenceAvatarImageUrl || '');
-        setProjectStyleBoardRef(project.referenceStyleBoardUrl || '');
-        setProjectDefaultProvider(project.defaultVideoProvider || '');
-        const sceneIds: string[] = project.sceneIds || [];
-        if (sceneIds.length === 0) {
-          setScenes([]);
-          return;
-        }
-        const fetched: Scene[] = [];
-        for (const id of sceneIds) {
-          const s = await getProjectScene(project._id, id);
-          fetched.push(s);
-        }
-        setScenes(fetched);
-      } catch {
-        setScenes([]);
-        setSelectedProject(null);
-      }
-    },
-    []
-  );
-
-  useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
-
-  useEffect(() => {
-    if (selectedProjectId) {
-      loadProjectScenes(selectedProjectId);
-      loadSuggestions(selectedProjectId);
-    }
-  }, [selectedProjectId, loadProjectScenes]);
-
-  const loadSuggestions = useCallback(
-    async (projectId: string) => {
-      setSuggestionsLoading(true);
-      try {
-        const items = await getProjectSuggestions(projectId);
-        setSuggestions(items);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setSuggestionsLoading(false);
-      }
-    },
-    []
-  );
-
-  const handleCreateProject = async () => {
-    if (!newProjectTitle.trim()) return;
+  const handleGenerate = async () => {
+    const text = prompt.trim();
+    if (!text) return;
     setLoading(true);
     setError(null);
     try {
-      const project = await createProject({ title: newProjectTitle.trim() });
-      setNewProjectTitle('');
-      await loadProjects();
-      setSelectedProjectId(project._id);
-      setSelectedProject(project);
+      const res = await generateVideoClip({
+        prompt: text,
+        provider,
+        durationSeconds,
+        aspectRatio,
+        referenceUrl: referenceUrl.trim() || undefined,
+        style: style || undefined,
+      });
+      setResultUrl(res.url);
+      setResultProvider(res.provider);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
-      setError(err?.response?.data?.error ?? err?.message ?? 'Failed to create project');
+      setError(err?.response?.data?.error ?? err?.message ?? 'Failed to generate video');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAddScene = async () => {
-    const start = sceneStart.trim();
-    const middle = sceneMiddle.trim();
-    const end = sceneEnd.trim();
-    if (!selectedProjectId || (!start && !middle && !end)) return;
-    const combinedPrompt = [
-      start ? `At the start of this 8 seconds: ${start}` : '',
-      middle ? `Main action: ${middle}` : '',
-      end ? `By the end: ${end}` : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-    setLoading(true);
-    setError(null);
-    try {
-      const scene = await createProjectScene(selectedProjectId, {
-        prompt: combinedPrompt,
-        summary: combinedPrompt.slice(0, 220),
-        referenceImageUrl: sceneReferenceImageUrl || undefined,
-        videoProviderOverride: sceneProviderOverride || undefined,
-      });
-      setSceneStart('');
-      setSceneMiddle('');
-      setSceneEnd('');
-      setSceneProviderOverride('');
-      setSceneReferenceImageUrl('');
-      setScenes((prev) => [...prev, scene]);
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { error?: string } }; message?: string };
-      setError(err?.response?.data?.error ?? err?.message ?? 'Failed to add scene');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateScene = async (scene: Scene) => {
-    if (!selectedProjectId) return;
-    setSceneLoadingId(scene._id);
-    setError(null);
-    try {
-      const res = await generateSceneVideo(selectedProjectId, scene._id, {
-        // Let backend resolve provider from scene override / project default.
-      });
-      setScenes((prev) =>
-        prev.map((s) => (s._id === scene._id ? { ...s, renderUrl: res.url, status: 'rendered' } : s))
-      );
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { error?: string } }; message?: string };
-      setError(err?.response?.data?.error ?? err?.message ?? 'Failed to generate scene video');
-    } finally {
-      setSceneLoadingId(null);
     }
   };
 
   return (
     <AppLayout>
-      <div
-        style={{
-          display: 'flex',
-          height: 'calc(100dvh - 64px)',
-        }}
-      >
-        {/* Sidebar: projects */}
-        <aside
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
+          <Video style={{ width: 18, height: 18, color: 'var(--accent-primary)' }} />
+          <div>
+            <h1 style={{ fontSize: 'var(--font-lg)', fontWeight: 800, letterSpacing: '-0.02em' }}>Video Studio</h1>
+            <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)', marginTop: 4 }}>
+              Generate a single clip from a prompt (optionally with a reference image).
+            </p>
+          </div>
+        </div>
+
+        <div
           style={{
-            width: '280px',
-            borderRight: '1px solid var(--border)',
-            padding: 'var(--space-4)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--space-4)',
+            display: 'grid',
+            gridTemplateColumns: '1fr 360px',
+            gap: 'var(--space-6)',
+            alignItems: 'start',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Film style={{ width: 18, height: 18 }} />
-            <h1 style={{ fontSize: 'var(--font-md)', fontWeight: 600 }}>Video Studio</h1>
-          </div>
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 'var(--font-xs)',
-                marginBottom: '4px',
-                color: 'var(--text-secondary)',
-              }}
-            >
-              New project
+          {/* Left: editor */}
+          <div
+            style={{
+              borderRadius: 14,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-secondary)',
+              padding: 'var(--space-5)',
+            }}
+          >
+            <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+              Prompt
             </label>
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-              <input
-                value={newProjectTitle}
-                onChange={(e) => setNewProjectTitle(e.target.value)}
-                placeholder="Project title"
+            <div style={{ position: 'relative' }}>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe the scene, action, camera, lighting, and mood..."
+                rows={7}
                 style={{
-                  flex: 1,
-                  borderRadius: 8,
+                  width: '100%',
+                  resize: 'vertical',
+                  borderRadius: 10,
                   border: '1px solid var(--border)',
-                  background: 'var(--bg-secondary)',
-                  padding: '6px 10px',
+                  background: 'var(--bg-tertiary)',
+                  padding: '10px 44px 10px 12px',
                   fontSize: 'var(--font-sm)',
                   color: 'var(--text)',
+                  lineHeight: 1.5,
                 }}
               />
-              <button
-                onClick={handleCreateProject}
-                disabled={loading || !newProjectTitle.trim()}
+              <label
+                title="Attach reference image"
                 style={{
-                  borderRadius: 8,
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                  width: 30,
+                  height: 30,
+                  borderRadius: 10,
                   border: '1px solid var(--border)',
-                  background: 'var(--bg-tertiary)',
-                  padding: '6px 10px',
-                  fontSize: 'var(--font-xs)',
-                  display: 'flex',
+                  background: 'rgba(2,6,23,0.35)',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 4,
-                  cursor: loading || !newProjectTitle.trim() ? 'not-allowed' : 'pointer',
+                  justifyContent: 'center',
+                  cursor: uploadingRef ? 'not-allowed' : 'pointer',
                 }}
               >
-                {loading ? <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> : <Plus style={{ width: 14, height: 14 }} />}
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  disabled={uploadingRef}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file) return;
+                    setUploadingRef(true);
+                    setError(null);
+                    try {
+                      const uploaded = await uploadVideoReferenceImage(file);
+                      setReferenceUrl(uploaded.url);
+                    } catch (err: unknown) {
+                      const ex = err as { response?: { data?: { error?: string } }; message?: string };
+                      setError(ex?.response?.data?.error ?? ex?.message ?? 'Failed to upload reference image');
+                    } finally {
+                      setUploadingRef(false);
+                    }
+                  }}
+                />
+                {uploadingRef ? (
+                  <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <ImageUp style={{ width: 14, height: 14, color: 'var(--text-secondary)' }} />
+                )}
+              </label>
             </div>
-          </div>
-          {selectedProject && (
-            <div
-              style={{
-                padding: '8px 10px',
-                borderRadius: 8,
-                border: '1px solid var(--border)',
-                background: 'var(--bg-secondary)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 2,
-                }}
-              >
-                <span style={{ fontSize: 'var(--font-xs)', fontWeight: 500 }}>Project context</span>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Provider
+                </label>
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value as 'kling' | 'veo')}
+                  style={{
+                    width: '100%',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-tertiary)',
+                    padding: '10px 12px',
+                    fontSize: 'var(--font-sm)',
+                    color: 'var(--text)',
+                  }}
+                >
+                  <option value="kling">Kling 3</option>
+                  <option value="veo">Veo 3.1</option>
+                </select>
               </div>
-              <input
-                ref={avatarFileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file || !selectedProjectId) return;
-                  try {
-                    const updated = await uploadProjectAvatarImage(selectedProjectId, file);
-                    setSelectedProject(updated);
-                    setProjectAvatarRef(updated.referenceAvatarImageUrl || '');
-                  } finally {
-                    e.target.value = '';
-                  }
-                }}
-              />
-              <input
-                ref={styleBoardFileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file || !selectedProjectId) return;
-                  try {
-                    const updated = await uploadProjectStyleBoardImage(selectedProjectId, file);
-                    setSelectedProject(updated);
-                    setProjectStyleBoardRef(updated.referenceStyleBoardUrl || '');
-                  } finally {
-                    e.target.value = '';
-                  }
-                }}
-              />
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 'var(--font-2xs)',
-                  marginBottom: 2,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                Project avatar reference (URL)
-              </label>
-              <input
-                value={projectAvatarRef}
-                onChange={(e) => setProjectAvatarRef(e.target.value)}
-                placeholder="https://..."
-                style={{
-                  borderRadius: 6,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-tertiary)',
-                  padding: '4px 8px',
-                  fontSize: 'var(--font-2xs)',
-                  color: 'var(--text)',
-                  marginBottom: 4,
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => avatarFileInputRef.current?.click()}
-                style={{
-                  alignSelf: 'flex-start',
-                  borderRadius: 999,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-tertiary)',
-                  padding: '2px 8px',
-                  fontSize: 'var(--font-2xs)',
-                  marginBottom: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                Upload image from device
-              </button>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 'var(--font-2xs)',
-                  marginBottom: 2,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                Brand / style board reference (URL)
-              </label>
-              <input
-                value={projectStyleBoardRef}
-                onChange={(e) => setProjectStyleBoardRef(e.target.value)}
-                placeholder="https://..."
-                style={{
-                  borderRadius: 6,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-tertiary)',
-                  padding: '4px 8px',
-                  fontSize: 'var(--font-2xs)',
-                  color: 'var(--text)',
-                  marginBottom: 4,
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => styleBoardFileInputRef.current?.click()}
-                style={{
-                  alignSelf: 'flex-start',
-                  borderRadius: 999,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-tertiary)',
-                  padding: '2px 8px',
-                  fontSize: 'var(--font-2xs)',
-                  marginBottom: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                Upload image from device
-              </button>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 'var(--font-2xs)',
-                  marginBottom: 2,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                Default video model
+              <div>
+                <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Aspect ratio
+                </label>
+                <select
+                  value={aspectRatio}
+                  onChange={(e) => setAspectRatio(e.target.value as '1:1' | '16:9' | '9:16')}
+                  style={{
+                    width: '100%',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-tertiary)',
+                    padding: '10px 12px',
+                    fontSize: 'var(--font-sm)',
+                    color: 'var(--text)',
+                  }}
+                >
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                  <option value="1:1">1:1</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Duration
+                </label>
+                <select
+                  value={String(durationSeconds)}
+                  onChange={(e) => setDurationSeconds(parseInt(e.target.value, 10))}
+                  style={{
+                    width: '100%',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-tertiary)',
+                    padding: '10px 12px',
+                    fontSize: 'var(--font-sm)',
+                    color: 'var(--text)',
+                  }}
+                >
+                  <option value="4">4s</option>
+                  <option value="6">6s</option>
+                  <option value="8">8s</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Reference image (optional)
+                </label>
+                <input
+                  value={referenceUrl}
+                  onChange={(e) => setReferenceUrl(e.target.value)}
+                  placeholder="https://... or /api/image-studio/file/..."
+                  style={{
+                    width: '100%',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-tertiary)',
+                    padding: '10px 12px',
+                    fontSize: 'var(--font-sm)',
+                    color: 'var(--text)',
+                  }}
+                />
+                <p style={{ marginTop: 8, fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  Tip: use the attach icon in the prompt to upload a reference image.
+                  {' '}
+                  {provider === 'kling' ? 'Kling needs external URLs.' : 'Veo can use uploaded or internal URLs.'}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 'var(--space-3)' }}>
+              <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                Video style
               </label>
               <select
-                value={projectDefaultProvider}
+                value={style}
                 onChange={(e) =>
-                  setProjectDefaultProvider(
-                    e.target.value === '' ? '' : (e.target.value as 'kling' | 'veo')
+                  setStyle(
+                    (e.target.value as '' | 'cinematic' | 'studio_ghibli' | 'anime_cinematic' | 'hyperreal_gritty') || ''
                   )
                 }
                 style={{
-                  borderRadius: 6,
+                  width: '100%',
+                  borderRadius: 10,
                   border: '1px solid var(--border)',
                   background: 'var(--bg-tertiary)',
-                  padding: '4px 8px',
-                  fontSize: 'var(--font-2xs)',
+                  padding: '10px 12px',
+                  fontSize: 'var(--font-sm)',
                   color: 'var(--text)',
-                  marginBottom: 6,
                 }}
               >
-                <option value="">Auto (per scene / Kling default)</option>
-                <option value="kling">Kling 3</option>
-                <option value="veo">Veo 3</option>
+                <option value="">Default</option>
+                <option value="cinematic">Cinematic</option>
+                <option value="studio_ghibli">Studio Ghibli</option>
+                <option value="anime_cinematic">Anime cinematic</option>
+                <option value="hyperreal_gritty">Hyperreal gritty</option>
               </select>
-              <button
-                onClick={async () => {
-                  if (!selectedProjectId) return;
-                  try {
-                    const updated = await updateProject(selectedProjectId, {
-                      referenceAvatarImageUrl: projectAvatarRef || undefined,
-                      referenceStyleBoardUrl: projectStyleBoardRef || undefined,
-                      defaultVideoProvider: projectDefaultProvider || undefined,
-                    });
-                    setSelectedProject(updated);
-                  } catch {
-                    // Silent fail; main flow still works.
-                  }
-                }}
-                style={{
-                  alignSelf: 'flex-start',
-                  borderRadius: 999,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-tertiary)',
-                  padding: '4px 10px',
-                  fontSize: 'var(--font-2xs)',
-                  cursor: selectedProjectId ? 'pointer' : 'not-allowed',
-                }}
-              >
-                Save project context
-              </button>
-            </div>
-          )}
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            {projects.map((p) => {
-              const active = p._id === selectedProjectId;
-              return (
-                <button
-                  key={p._id}
-                  onClick={() => setSelectedProjectId(p._id)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    marginBottom: 'var(--space-2)',
-                    padding: 'var(--space-2) var(--space-3)',
-                    background: active ? 'rgba(0,229,160,0.08)' : 'var(--bg-secondary)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ fontSize: 'var(--font-sm)', fontWeight: 500 }}>{p.title}</div>
-                  <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
-                    {p.sceneIds?.length ?? 0} scenes
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </aside>
-
-        {/* Main: scenes & editor */}
-        <main
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div
-            style={{
-              padding: 'var(--space-4)',
-              borderBottom: '1px solid var(--border)',
-            }}
-          >
-            <div style={{ marginBottom: 'var(--space-2)', display: 'grid', gap: 'var(--space-2)' }}>
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 'var(--font-xs)',
-                    marginBottom: 4,
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  Start (first couple seconds)
-                </label>
-                <input
-                  value={sceneStart}
-                  onChange={(e) => setSceneStart(e.target.value)}
-                  placeholder="Where are we? Who is on screen?"
-                  style={{
-                    width: '100%',
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-secondary)',
-                    padding: '6px 10px',
-                    fontSize: 'var(--font-sm)',
-                    color: 'var(--text)',
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 'var(--font-xs)',
-                    marginBottom: 4,
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  Main action
-                </label>
-                <input
-                  value={sceneMiddle}
-                  onChange={(e) => setSceneMiddle(e.target.value)}
-                  placeholder="What is the main beat or movement?"
-                  style={{
-                    width: '100%',
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-secondary)',
-                    padding: '6px 10px',
-                    fontSize: 'var(--font-sm)',
-                    color: 'var(--text)',
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 'var(--font-xs)',
-                    marginBottom: 4,
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  Ending
-                </label>
-                <input
-                  value={sceneEnd}
-                  onChange={(e) => setSceneEnd(e.target.value)}
-                  placeholder="How does this 8s moment end or react?"
-                  style={{
-                    width: '100%',
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-secondary)',
-                    padding: '6px 10px',
-                    fontSize: 'var(--font-sm)',
-                    color: 'var(--text)',
-                  }}
-                />
-              </div>
-            </div>
-            <div
-              style={{
-                marginTop: 'var(--space-2)',
-                borderTop: '1px dashed var(--border)',
-                paddingTop: 'var(--space-2)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowAdvanced((prev) => !prev)}
-                style={{
-                  alignSelf: 'flex-start',
-                  border: 'none',
-                  background: 'transparent',
-                  fontSize: 'var(--font-xs)',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
-              >
-                {showAdvanced ? 'Hide advanced' : 'Show advanced'}
-              </button>
-              {showAdvanced && (
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: 'var(--space-2)',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  }}
-                >
-                  <div>
-                    <label
-                      style={{
-                        display: 'block',
-                        fontSize: 'var(--font-xs)',
-                        marginBottom: 4,
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
-                      Model / provider
-                    </label>
-                    <select
-                      value={sceneProviderOverride}
-                      onChange={(e) =>
-                        setSceneProviderOverride(
-                          e.target.value === '' ? '' : (e.target.value as 'kling' | 'veo')
-                        )
-                      }
-                      style={{
-                        width: '100%',
-                        borderRadius: 8,
-                        border: '1px solid var(--border)',
-                        background: 'var(--bg-secondary)',
-                        padding: '6px 10px',
-                        fontSize: 'var(--font-sm)',
-                        color: 'var(--text)',
-                      }}
-                    >
-                      <option value="">Project default / Kling</option>
-                      <option value="kling">Kling 3</option>
-                      <option value="veo">Veo 3</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      style={{
-                        display: 'block',
-                        fontSize: 'var(--font-xs)',
-                        marginBottom: 4,
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
-                      Reference image URL
-                    </label>
-                    <input
-                      value={sceneReferenceImageUrl}
-                      onChange={(e) => setSceneReferenceImageUrl(e.target.value)}
-                      placeholder="Optional: URL to a frame or style image"
-                      style={{
-                        width: '100%',
-                        borderRadius: 8,
-                        border: '1px solid var(--border)',
-                        background: 'var(--bg-secondary)',
-                        padding: '6px 10px',
-                        fontSize: 'var(--font-sm)',
-                        color: 'var(--text)',
-                      }}
-                    />
-                  </div>
-                </div>
+              {provider === 'veo' && referenceUrl.trim() && durationSeconds !== 8 && (
+                <p style={{ marginTop: 6, fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  Veo reference images typically require 8s. If generation fails, try 8s.
+                </p>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+
+            <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 'var(--space-5)' }}>
               <button
-                onClick={handleAddScene}
-                disabled={
-                  loading ||
-                  (!sceneStart.trim() && !sceneMiddle.trim() && !sceneEnd.trim()) ||
-                  !selectedProjectId
-                }
+                onClick={handleGenerate}
+                disabled={!canGenerate}
                 style={{
-                  borderRadius: 8,
+                  borderRadius: 12,
                   border: '1px solid var(--border)',
                   background: 'var(--accent-primary)',
                   color: '#020617',
-                  padding: '0 16px',
+                  padding: '10px 14px',
                   fontSize: 'var(--font-sm)',
-                  fontWeight: 600,
-                  display: 'flex',
+                  fontWeight: 800,
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 6,
-                  cursor:
-                    loading ||
-                    (!sceneStart.trim() && !sceneMiddle.trim() && !sceneEnd.trim()) ||
-                    !selectedProjectId
-                      ? 'not-allowed'
-                      : 'pointer',
+                  gap: 8,
+                  cursor: !canGenerate ? 'not-allowed' : 'pointer',
                 }}
               >
-                {loading ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Plus style={{ width: 16, height: 16 }} />}
-                Add scene
+                {loading ? (
+                  <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <Sparkles style={{ width: 16, height: 16 }} />
+                )}
+                Generate
               </button>
+              {error && <span style={{ color: '#f97373', fontSize: 'var(--font-xs)' }}>{error}</span>}
             </div>
-            {error && (
-              <p style={{ color: '#f97373', fontSize: 'var(--font-xs)', marginTop: 6 }}>{error}</p>
-            )}
           </div>
 
-          <div
+          {/* Right: preview */}
+          <aside
             style={{
-              flex: 1,
-              display: 'flex',
-              overflow: 'hidden',
+              borderRadius: 14,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-secondary)',
+              padding: 'var(--space-5)',
             }}
           >
-            {/* Storyboard */}
-            <section
-              style={{
-                flex: 1,
-                padding: 'var(--space-4)',
-                overflow: 'auto',
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: 'var(--font-sm)',
-                  fontWeight: 600,
-                  marginBottom: 'var(--space-3)',
-                }}
-              >
-                Scenes
-              </h2>
-              {scenes.length === 0 && (
-                <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
-                  No scenes yet. Add a prompt above to create your first 8s scene.
-                </p>
-              )}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 'var(--space-3)',
-                  flexWrap: 'wrap',
-                }}
-              >
-                {scenes.map((scene) => (
-                  <div
-                    key={scene._id}
-                    style={{
-                      width: 240,
-                      borderRadius: 10,
-                      border: '1px solid var(--border)',
-                      background: 'var(--bg-secondary)',
-                      padding: 'var(--space-3)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 'var(--space-2)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 'var(--font-sm)',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {scene.title || `Scene ${scene.index != null ? scene.index + 1 : ''}`}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 'var(--font-xs)',
-                        color: 'var(--text-secondary)',
-                        minHeight: 40,
-                      }}
-                    >
-                      {scene.summary || scene.script || 'No summary yet.'}
-                    </div>
-                    <div
-                      style={{
-                        position: 'relative',
-                        borderRadius: 8,
-                        overflow: 'hidden',
-                        background: 'var(--bg-tertiary)',
-                        height: 120,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {scene.renderUrl ? (
-                        <video
-                          src={resolveImageStudioFileUrl(scene.renderUrl)}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          controls
-                        />
-                      ) : (
-                        <span
-                          style={{
-                            fontSize: 'var(--font-xs)',
-                            color: 'var(--text-secondary)',
-                          }}
-                        >
-                          No video generated yet
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginTop: 'var(--space-1)',
-                        gap: 'var(--space-2)',
-                      }}
-                    >
-                      <button
-                        onClick={() => handleGenerateScene(scene)}
-                        disabled={sceneLoadingId === scene._id}
-                        style={{
-                          borderRadius: 999,
-                          border: '1px solid var(--border)',
-                          background: 'var(--bg-tertiary)',
-                          padding: '4px 10px',
-                          fontSize: 'var(--font-xs)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          cursor: sceneLoadingId === scene._id ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        {sceneLoadingId === scene._id ? (
-                          <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
-                        ) : scene.renderUrl ? (
-                          <RefreshCw style={{ width: 14, height: 14 }} />
-                        ) : (
-                          <Play style={{ width: 14, height: 14 }} />
-                        )}
-                        {scene.renderUrl ? 'Regenerate' : 'Generate'}
-                      </button>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button
-                          onClick={async () => {
-                            if (!selectedProjectId) return;
-                            await updateSceneFeedback(selectedProjectId, scene._id, {
-                              rating: 5,
-                              flags: ['great'],
-                            });
-                          }}
-                          style={{
-                            borderRadius: 999,
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg-secondary)',
-                            padding: 4,
-                            cursor: 'pointer',
-                          }}
-                          title="Great scene"
-                        >
-                          <ThumbsUp style={{ width: 14, height: 14 }} />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (!selectedProjectId) return;
-                            await updateSceneFeedback(selectedProjectId, scene._id, {
-                              flags: ['too_small_character'],
-                            });
-                          }}
-                          style={{
-                            borderRadius: 999,
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg-secondary)',
-                            padding: 4,
-                            cursor: 'pointer',
-                          }}
-                          title="Character too small"
-                        >
-                          <ThumbsDown style={{ width: 14, height: 14 }} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>
+              Output
+            </p>
 
-            {/* Suggestions panel */}
-            <aside
-              style={{
-                width: 280,
-                borderLeft: '1px solid var(--border)',
-                padding: 'var(--space-4)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-3)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <h2
+            {resultUrl ? (
+              <>
+                <div
                   style={{
-                    fontSize: 'var(--font-sm)',
-                    fontWeight: 600,
-                  }}
-                >
-                  Next scene ideas
-                </h2>
-                <button
-                  onClick={() => selectedProjectId && loadSuggestions(selectedProjectId)}
-                  disabled={!selectedProjectId || suggestionsLoading}
-                  style={{
-                    borderRadius: 999,
+                    borderRadius: 12,
+                    overflow: 'hidden',
                     border: '1px solid var(--border)',
                     background: 'var(--bg-tertiary)',
-                    padding: 4,
-                    cursor: !selectedProjectId || suggestionsLoading ? 'not-allowed' : 'pointer',
                   }}
-                  title="Refresh suggestions"
                 >
-                  {suggestionsLoading ? (
-                    <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
-                  ) : (
-                    <RefreshCw style={{ width: 14, height: 14 }} />
-                  )}
-                </button>
-              </div>
-              {suggestions.length === 0 && (
-                <p
+                  <video
+                    src={resolveImageStudioFileUrl(resultUrl)}
+                    controls
+                    playsInline
+                    style={{ display: 'block', width: '100%', height: 'auto' }}
+                  />
+                </div>
+                <div style={{ marginTop: 10, fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
+                  Provider: <span style={{ color: 'var(--text)' }}>{resultProvider || provider}</span>
+                </div>
+                <a
+                  href={resolveImageStudioFileUrl(resultUrl)}
+                  download
                   style={{
+                    display: 'inline-flex',
+                    marginTop: 12,
+                    textDecoration: 'none',
+                    borderRadius: 999,
+                    border: '1px solid rgba(0,229,160,0.3)',
+                    background: 'rgba(0,229,160,0.08)',
+                    color: 'var(--accent-primary)',
+                    padding: '6px 10px',
                     fontSize: 'var(--font-xs)',
-                    color: 'var(--text-secondary)',
+                    fontWeight: 700,
                   }}
                 >
-                  No suggestions yet. Add a scene or refresh to get ideas for what happens next.
-                </p>
-              )}
+                  Download mp4
+                </a>
+              </>
+            ) : (
               <div
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 'var(--space-2)',
-                  overflow: 'auto',
+                  borderRadius: 12,
+                  border: '1px dashed var(--border)',
+                  padding: 'var(--space-5)',
+                  color: 'var(--text-secondary)',
+                  fontSize: 'var(--font-xs)',
+                  textAlign: 'center',
                 }}
               >
-                {suggestions.map((s, idx) => (
-                  <button
-                    key={`${s.title}-${idx}`}
-                    onClick={() => {
-                      // Simple behavior: drop suggestion prompt into the \"Main action\" field.
-                      setSceneMiddle(s.prompt);
-                    }}
-                    style={{
-                      textAlign: 'left',
-                      borderRadius: 8,
-                      border: '1px solid var(--border)',
-                      background: 'var(--bg-secondary)',
-                      padding: 'var(--space-2) var(--space-3)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 'var(--font-xs)',
-                        fontWeight: 600,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {s.title}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 'var(--font-xs)',
-                        color: 'var(--text-secondary)',
-                        marginBottom: 4,
-                      }}
-                    >
-                      {s.summary}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 'var(--font-2xs)',
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
-                      Click to use this prompt.
-                    </div>
-                  </button>
-                ))}
+                Your generated clip will show up here.
               </div>
-            </aside>
-          </div>
-        </main>
+            )}
+          </aside>
+        </div>
       </div>
     </AppLayout>
   );

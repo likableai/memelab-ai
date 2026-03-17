@@ -489,6 +489,8 @@ export interface Project {
   avatarId?: string;
   logoUrl?: string;
   logoAssetId?: string;
+  stylePreset?: 'anime_cinematic' | 'hyperreal_gritty' | 'stylized_statue' | 'ghibli_handdrawn';
+  memeFlavor?: boolean;
   brandPalette?: {
     primary?: string;
     secondary?: string;
@@ -531,6 +533,8 @@ export const getProjects = async (): Promise<Project[]> => {
 export const createProject = async (payload: {
   title: string;
   description?: string;
+  stylePreset?: Project['stylePreset'];
+  memeFlavor?: boolean;
 }): Promise<Project> => {
   const response = await api.post<Project>('/projects', payload);
   return response.data;
@@ -554,6 +558,8 @@ export const updateProject = async (
     referenceAvatarImageUrl: string;
     referenceStyleBoardUrl: string;
     defaultVideoProvider: 'kling' | 'veo';
+    stylePreset: Project['stylePreset'];
+    memeFlavor: boolean;
   }>
 ): Promise<Project> => {
   const response = await api.patch<Project>(`/projects/${id}`, payload);
@@ -648,6 +654,45 @@ export const updateSceneFeedback = async (
     `/projects/${projectId}/scenes/${sceneId}/feedback`,
     payload
   );
+  return response.data;
+};
+
+// --- Simple Video Studio API ---
+
+export interface GenerateVideoClipParams {
+  prompt: string;
+  provider?: 'kling' | 'veo';
+  durationSeconds?: number;
+  aspectRatio?: string;
+  referenceUrl?: string;
+  style?: string;
+}
+
+export interface GenerateVideoClipResponse {
+  url: string;
+  provider: 'kling' | 'veo';
+}
+
+export interface UploadVideoReferenceImageResponse {
+  url: string;
+  filename: string;
+}
+
+export const uploadVideoReferenceImage = async (
+  file: File
+): Promise<UploadVideoReferenceImageResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post<UploadVideoReferenceImageResponse>('/video/reference-image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const generateVideoClip = async (
+  payload: GenerateVideoClipParams
+): Promise<GenerateVideoClipResponse> => {
+  const response = await api.post<GenerateVideoClipResponse>('/video/generate', payload);
   return response.data;
 };
 
