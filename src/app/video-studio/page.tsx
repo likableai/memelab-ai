@@ -2,13 +2,15 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/AppLayout';
-import { ImageUp, Loader2, Sparkles, Video } from 'lucide-react';
+import { Clock, ImageUp, Loader2, Sparkles, Trash2, Video } from 'lucide-react';
 import {
   resolveImageStudioFileUrl,
   createVideoJob,
   getVideoJob,
   uploadVideoReferenceImage,
 } from '@/lib/api';
+import { useStudioHistory } from '@/hooks/useStudioHistory';
+import { useEvmWallet } from '@/components/WalletProvider';
 
 export default function VideoStudioPage() {
   const [prompt, setPrompt] = useState('');
@@ -28,6 +30,21 @@ export default function VideoStudioPage() {
   const [jobStartedAt, setJobStartedAt] = useState<number | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultProvider, setResultProvider] = useState<'kling' | 'veo' | null>(null);
+
+  const { address } = useEvmWallet();
+  const { history, selectedItem, addItem, selectItem, clearHistory } = useStudioHistory({
+    studio: 'video',
+    walletAddress: address ?? null,
+  });
+
+  useEffect(() => {
+    if (selectedItem?.url) {
+      setResultUrl(selectedItem.url);
+      setResultProvider((selectedItem.format as 'kling' | 'veo') || null);
+      if (selectedItem.prompt) setPrompt(selectedItem.prompt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem?.id]);
 
   const canGenerate = useMemo(() => prompt.trim().length > 0 && !loading, [prompt, loading]);
 
@@ -56,6 +73,11 @@ export default function VideoStudioPage() {
         if (s.status === 'succeeded' && s.resultUrl) {
           setResultUrl(s.resultUrl);
           setResultProvider((s.providerUsed as 'kling' | 'veo') || (s.provider as 'kling' | 'veo'));
+          addItem({
+            url: s.resultUrl,
+            format: (s.providerUsed || s.provider) as string,
+            prompt: prompt.trim().slice(0, 180),
+          });
           setLoading(false);
           return;
         }
@@ -398,9 +420,33 @@ export default function VideoStudioPage() {
               padding: 'var(--space-5)',
             }}
           >
-            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: 10 }}>
-              Output
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                Output
+              </p>
+              {history.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearHistory}
+                  title="Clear history"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    borderRadius: 999,
+                    border: '1px solid var(--border)',
+                    background: 'transparent',
+                    padding: '4px 8px',
+                    fontSize: '11px',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Trash2 style={{ width: 12, height: 12 }} />
+                  Clear
+                </button>
+              )}
+            </div>
 
             {resultUrl ? (
               <>
@@ -455,6 +501,49 @@ export default function VideoStudioPage() {
                 Your generated clip will show up here.
               </div>
             )}
+
+            {/* History */}
+            <div style={{ marginTop: 'var(--space-5)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <Clock style={{ width: 14, height: 14, color: 'var(--text-secondary)' }} />
+                <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                  History
+                </p>
+              </div>
+              {history.length === 0 ? (
+                <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
+                  No history yet. Generate a clip to save it here.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflow: 'auto' }}>
+                  {history.map((h) => {
+                    const active = selectedItem?.id === h.id;
+                    return (
+                      <button
+                        key={h.id}
+                        type="button"
+                        onClick={() => selectItem(h.id)}
+                        style={{
+                          textAlign: 'left',
+                          borderRadius: 10,
+                          border: '1px solid var(--border)',
+                          background: active ? 'rgba(0,229,160,0.08)' : 'var(--bg-tertiary)',
+                          padding: '10px 12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                          {new Date(h.createdAt).toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text)' }}>
+                          {(h.prompt || 'Video clip').slice(0, 80)}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </aside>
         </div>
       </div>
