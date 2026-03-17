@@ -516,7 +516,12 @@ export interface Scene {
   durationSeconds: number;
   videoProvider?: 'kling' | 'veo' | 'seedance';
   referenceImageUrl?: string;
+  referenceImageUrls?: string[];
   videoProviderOverride?: 'kling' | 'veo';
+  klingRoute?: 'text2video' | 'image2video' | 'multi-image2video' | 'omni-video';
+  klingMultiShot?: boolean;
+  klingShotType?: 'customize' | 'intelligence';
+  klingMultiPrompt?: Array<{ index: number; prompt: string; duration: string }>;
   status: 'draft' | 'pending' | 'rendering' | 'rendered' | 'failed';
   renderUrl?: string;
   fileId?: string;
@@ -606,7 +611,12 @@ export const createProjectScene = async (
     summary?: string;
     script?: string;
     referenceImageUrl?: string;
+    referenceImageUrls?: string[];
     videoProviderOverride?: 'kling' | 'veo';
+    klingRoute?: 'text2video' | 'image2video' | 'multi-image2video' | 'omni-video';
+    klingMultiShot?: boolean;
+    klingShotType?: 'customize' | 'intelligence';
+    klingMultiPrompt?: Array<{ index: number; prompt: string; duration: string }>;
   }
 ): Promise<Scene> => {
   const response = await api.post<Scene>(`/projects/${projectId}/scenes`, payload);

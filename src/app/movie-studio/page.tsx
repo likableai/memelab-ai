@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppLayout } from '@/components/AppLayout';
-import { Plus, Play, RefreshCw, Loader2, Film, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Plus, Play, RefreshCw, Loader2, Film, ThumbsUp, ThumbsDown, ImageUp } from 'lucide-react';
 import {
   getProjects,
   createProject,
@@ -33,6 +33,17 @@ export default function MovieStudioPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [sceneProviderOverride, setSceneProviderOverride] = useState<'' | 'kling' | 'veo'>('');
   const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState('');
+  const [sceneReferenceImageUrls, setSceneReferenceImageUrls] = useState<string[]>([]);
+  const [sceneKlingRoute, setSceneKlingRoute] = useState<'image2video' | 'text2video' | 'multi-image2video' | 'omni-video'>(
+    'image2video'
+  );
+  const [sceneKlingMultiShot, setSceneKlingMultiShot] = useState(false);
+  const [sceneKlingShotType, setSceneKlingShotType] = useState<'customize' | 'intelligence'>('customize');
+  const [sceneKlingShots, setSceneKlingShots] = useState<Array<{ index: number; prompt: string; duration: number }>>([
+    { index: 1, prompt: '', duration: 2 },
+    { index: 2, prompt: '', duration: 3 },
+  ]);
+  const [sceneUploadingRef, setSceneUploadingRef] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sceneLoadingId, setSceneLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -141,17 +152,50 @@ export default function MovieStudioPage() {
     setLoading(true);
     setError(null);
     try {
+      const klingMultiPrompt =
+        (sceneProviderOverride || (projectDefaultProvider || 'kling')) === 'kling' && sceneKlingMultiShot
+          ? sceneKlingShots
+              .slice(0, 6)
+              .map((s, i) => ({
+                index: i + 1,
+                prompt: (s.prompt || '').trim(),
+                duration: String(Math.max(1, Math.min(15, Math.floor(s.duration || 1)))),
+              }))
+              .filter((s) => s.prompt.length > 0)
+          : undefined;
+
       const scene = await createProjectScene(selectedProjectId, {
         prompt: combinedPrompt,
         summary: combinedPrompt.slice(0, 220),
         referenceImageUrl: sceneReferenceImageUrl || undefined,
+        referenceImageUrls: sceneReferenceImageUrls.length ? sceneReferenceImageUrls : undefined,
         videoProviderOverride: sceneProviderOverride || undefined,
+        klingRoute:
+          (sceneProviderOverride || (projectDefaultProvider || 'kling')) === 'kling' ? sceneKlingRoute : undefined,
+        klingMultiShot:
+          (sceneProviderOverride || (projectDefaultProvider || 'kling')) === 'kling' ? sceneKlingMultiShot : undefined,
+        klingShotType:
+          (sceneProviderOverride || (projectDefaultProvider || 'kling')) === 'kling' && sceneKlingMultiShot
+            ? sceneKlingShotType
+            : undefined,
+        klingMultiPrompt:
+          (sceneProviderOverride || (projectDefaultProvider || 'kling')) === 'kling' && sceneKlingMultiShot
+            ? (klingMultiPrompt as any)
+            : undefined,
       });
       setSceneStart('');
       setSceneMiddle('');
       setSceneEnd('');
       setSceneProviderOverride('');
       setSceneReferenceImageUrl('');
+      setSceneReferenceImageUrls([]);
+      setSceneKlingRoute('image2video');
+      setSceneKlingMultiShot(false);
+      setSceneKlingShotType('customize');
+      setSceneKlingShots([
+        { index: 1, prompt: '', duration: 2 },
+        { index: 2, prompt: '', duration: 3 },
+      ]);
       setScenes((prev) => [...prev, scene]);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -708,7 +752,239 @@ export default function MovieStudioPage() {
                         color: 'var(--text)',
                       }}
                     />
+                    {sceneReferenceImageUrls.length > 0 && (
+                      <p style={{ marginTop: 6, fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Attached images: <span style={{ color: 'var(--text)' }}>{sceneReferenceImageUrls.length}</span>
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                      <label
+                        title="Attach reference image(s)"
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 10,
+                          border: '1px solid var(--border)',
+                          background: 'rgba(2,6,23,0.35)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: sceneUploadingRef ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          disabled={sceneUploadingRef}
+                          multiple={sceneProviderOverride === 'kling' && sceneKlingRoute === 'multi-image2video'}
+                          onChange={async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            e.target.value = '';
+                            if (!files.length) return;
+                            setSceneUploadingRef(true);
+                            setError(null);
+                            try {
+                              const uploadedUrls: string[] = [];
+                              for (const f of files) {
+                                const uploaded = await uploadProjectStyleBoardImage(selectedProjectId!, f);
+                                // Use the stored style-board URL as a stable blob URL, but also keep per-scene list.
+                                if (uploaded.referenceStyleBoardUrl) uploadedUrls.push(uploaded.referenceStyleBoardUrl);
+                              }
+                              const primary = uploadedUrls[0];
+                              if (primary) setSceneReferenceImageUrl(primary);
+                              if (uploadedUrls.length) {
+                                setSceneReferenceImageUrls((prev) => Array.from(new Set([...prev, ...uploadedUrls])));
+                              }
+                            } catch (err: unknown) {
+                              const ex = err as { response?: { data?: { error?: string } }; message?: string };
+                              setError(ex?.response?.data?.error ?? ex?.message ?? 'Failed to upload reference image');
+                            } finally {
+                              setSceneUploadingRef(false);
+                            }
+                          }}
+                        />
+                        {sceneUploadingRef ? (
+                          <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                        ) : (
+                          <ImageUp style={{ width: 14, height: 14, color: 'var(--text-secondary)' }} />
+                        )}
+                      </label>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        Upload reference image(s) (uses project blob storage)
+                      </span>
+                    </div>
                   </div>
+
+                  {(sceneProviderOverride === 'kling' || projectDefaultProvider === 'kling' || projectDefaultProvider === '') && (
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: 'var(--font-xs)',
+                          marginBottom: 4,
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        Kling generation route
+                      </label>
+                      <select
+                        value={sceneKlingRoute}
+                        onChange={(e) =>
+                          setSceneKlingRoute(
+                            e.target.value as 'image2video' | 'text2video' | 'multi-image2video' | 'omni-video'
+                          )
+                        }
+                        style={{
+                          width: '100%',
+                          borderRadius: 8,
+                          border: '1px solid var(--border)',
+                          background: 'var(--bg-secondary)',
+                          padding: '6px 10px',
+                          fontSize: 'var(--font-sm)',
+                          color: 'var(--text)',
+                        }}
+                      >
+                        <option value="text2video">Text to Video</option>
+                        <option value="image2video">Image to Video</option>
+                        <option value="multi-image2video">Multi-Image to Video</option>
+                        <option value="omni-video">Omni Video</option>
+                      </select>
+                      <label style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
+                        <input
+                          type="checkbox"
+                          checked={sceneKlingMultiShot}
+                          onChange={(e) => setSceneKlingMultiShot(e.target.checked)}
+                        />
+                        <span style={{ fontSize: 'var(--font-sm)', fontWeight: 600 }}>Enable multi-shot storyboard</span>
+                      </label>
+                      {sceneKlingMultiShot && (
+                        <>
+                          <div style={{ marginTop: 8 }}>
+                            <label
+                              style={{
+                                display: 'block',
+                                fontSize: 'var(--font-xs)',
+                                marginBottom: 4,
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              Storyboard type
+                            </label>
+                            <select
+                              value={sceneKlingShotType}
+                              onChange={(e) => setSceneKlingShotType(e.target.value as 'customize' | 'intelligence')}
+                              style={{
+                                width: '100%',
+                                borderRadius: 8,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg-secondary)',
+                                padding: '6px 10px',
+                                fontSize: 'var(--font-sm)',
+                                color: 'var(--text)',
+                              }}
+                            >
+                              <option value="customize">Customize</option>
+                              <option value="intelligence">Intelligence</option>
+                            </select>
+                          </div>
+                          <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+                            {sceneKlingShots.slice(0, 6).map((shot, idx) => (
+                              <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '12px', fontWeight: 700 }}>Shot {idx + 1}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSceneKlingShots((prev) => {
+                                        if (prev.length <= 1) return prev;
+                                        const next = prev.filter((_, i) => i !== idx);
+                                        return next.map((s, i) => ({ ...s, index: i + 1 }));
+                                      })
+                                    }
+                                    style={{
+                                      border: 'none',
+                                      background: 'transparent',
+                                      color: 'var(--text-secondary)',
+                                      cursor: 'pointer',
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                                <textarea
+                                  value={shot.prompt}
+                                  onChange={(e) =>
+                                    setSceneKlingShots((prev) =>
+                                      prev.map((s, i) => (i === idx ? { ...s, prompt: e.target.value } : s))
+                                    )
+                                  }
+                                  rows={2}
+                                  placeholder="Shot prompt..."
+                                  style={{
+                                    width: '100%',
+                                    marginTop: 6,
+                                    borderRadius: 8,
+                                    border: '1px solid var(--border)',
+                                    background: 'var(--bg-secondary)',
+                                    padding: '6px 10px',
+                                    fontSize: 'var(--font-sm)',
+                                    color: 'var(--text)',
+                                  }}
+                                />
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={15}
+                                  value={shot.duration}
+                                  onChange={(e) =>
+                                    setSceneKlingShots((prev) =>
+                                      prev.map((s, i) =>
+                                        i === idx ? { ...s, duration: parseInt(e.target.value || '1', 10) } : s
+                                      )
+                                    )
+                                  }
+                                  style={{
+                                    width: '100%',
+                                    marginTop: 6,
+                                    borderRadius: 8,
+                                    border: '1px solid var(--border)',
+                                    background: 'var(--bg-secondary)',
+                                    padding: '6px 10px',
+                                    fontSize: 'var(--font-sm)',
+                                    color: 'var(--text)',
+                                  }}
+                                />
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSceneKlingShots((prev) => {
+                                  if (prev.length >= 6) return prev;
+                                  const next = [...prev, { index: prev.length + 1, prompt: '', duration: 1 }];
+                                  return next.map((s, i) => ({ ...s, index: i + 1 }));
+                                })
+                              }
+                              style={{
+                                alignSelf: 'flex-start',
+                                borderRadius: 999,
+                                border: '1px solid var(--border)',
+                                background: 'transparent',
+                                color: 'var(--text)',
+                                padding: '6px 10px',
+                                fontSize: 12,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              + Add shot
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
