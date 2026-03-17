@@ -390,14 +390,20 @@ export const getImageStudioThemes = async (): Promise<string[]> => {
 };
 
 export type ImageStudioProvider = 'nano_banana_2' | 'reve_ai';
+export type NanoBananaModel = 'gemini-3.1-flash-image-preview' | 'gemini-3-pro-image-preview';
+export type NanoBananaResolution = '1K' | '2K' | '4K';
 
 export interface GenerateImageStudioParams {
   prompt: string;
   aspectRatio?: string;
   mode?: 'avatar' | 'logo' | 'meme';
   provider?: ImageStudioProvider;
-  /** Optional reference image (base64) for providers that support it (e.g. Reve AI remix). */
-  referenceImageBase64?: string;
+  /** Optional reference images (base64) for providers that support it. */
+  referenceImages?: Array<{ base64: string; mimeType?: string }>;
+  /** Nano Banana-only: choose image model variant. */
+  nanoBananaModel?: NanoBananaModel;
+  /** Nano Banana-only: output resolution. */
+  nanoBananaResolution?: NanoBananaResolution;
 }
 
 export interface GenerateImageStudioResponse {
@@ -409,6 +415,37 @@ export const generateImageStudioImage = async (
   params: GenerateImageStudioParams
 ): Promise<GenerateImageStudioResponse> => {
   const response = await api.post<GenerateImageStudioResponse>('/image-studio/generate', params);
+  return response.data;
+};
+
+// --- Nano Banana sessions (Image Studio only) ---
+
+export interface NanoBananaSessionCreateResponse {
+  sessionId: string;
+  sessionJsonUrl: string;
+  model: NanoBananaModel;
+  resolution?: NanoBananaResolution;
+}
+
+export const createNanoBananaSession = async (payload: {
+  model?: NanoBananaModel;
+  resolution?: NanoBananaResolution;
+}): Promise<NanoBananaSessionCreateResponse> => {
+  const response = await api.post<NanoBananaSessionCreateResponse>('/image-studio/nano-banana/session/create', payload);
+  return response.data;
+};
+
+export const sendNanoBananaSessionMessage = async (payload: {
+  sessionId: string;
+  prompt: string;
+  mode?: 'avatar' | 'logo' | 'meme';
+  aspectRatio?: string;
+  referenceImages?: Array<{ base64: string; mimeType?: string }>;
+}): Promise<GenerateImageStudioResponse & { sessionId: string }> => {
+  const response = await api.post<GenerateImageStudioResponse & { sessionId: string }>(
+    '/image-studio/nano-banana/session/send',
+    payload
+  );
   return response.data;
 };
 

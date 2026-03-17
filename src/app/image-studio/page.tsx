@@ -25,6 +25,8 @@ import {
   getImageStudioFormats,
   getImageStudioThemes,
   generateImageStudioImage,
+  createNanoBananaSession,
+  sendNanoBananaSessionMessage,
   remixImageStudioBatch,
   resolveImageStudioFileUrl,
   createMemelordMeme,
@@ -39,6 +41,8 @@ import { useStudioHistory } from '@/hooks/useStudioHistory';
 
 type TabMode = 'avatar' | 'logo' | 'meme';
 type MemeSource = 'nano_banana_2' | 'reve_ai' | 'memelord';
+type NanoBananaModel = 'gemini-3.1-flash-image-preview' | 'gemini-3-pro-image-preview';
+type NanoBananaResolution = '1K' | '2K' | '4K';
 
 const PATTERNS_PAGE_SIZE = 24;
 const MAX_BATCH_REMIX = 20;
@@ -66,8 +70,12 @@ export default function ImageStudioPage() {
   const [remixResults, setRemixResults] = useState<Array<{ patternId: string; url: string }>>([]);
   const [imageProvider, setImageProvider] = useState<ImageStudioProvider>('nano_banana_2');
   const [memeSource, setMemeSource] = useState<MemeSource>('nano_banana_2');
-  const [referenceImageBase64, setReferenceImageBase64] = useState<string | null>(null);
-  const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
+  const [nanoBananaModel, setNanoBananaModel] = useState<NanoBananaModel>('gemini-3.1-flash-image-preview');
+  const [nanoBananaResolution, setNanoBananaResolution] = useState<NanoBananaResolution>('2K');
+  const [nanoBananaSessionId, setNanoBananaSessionId] = useState<string | null>(null);
+  const [referenceImages, setReferenceImages] = useState<
+    Array<{ id: string; base64: string; mimeType: string; previewUrl: string }>
+  >([]);
   const [memelordResults, setMemelordResults] = useState<Array<{ url: string; template_name?: string }>>([]);
   const [videoJobs, setVideoJobs] = useState<Array<{ job_id: string; template_name?: string; caption?: string }>>([]);
   const [ideas, setIdeas] = useState<MemeIdea[]>([]);
@@ -90,11 +98,21 @@ export default function ImageStudioPage() {
     else setGeneratedUrl(null);
   }, [selectedItem]);
 
-  const clearReferenceImage = useCallback(() => {
-    if (referencePreviewUrl) URL.revokeObjectURL(referencePreviewUrl);
-    setReferencePreviewUrl(null);
-    setReferenceImageBase64(null);
-  }, [referencePreviewUrl]);
+  const clearReferenceImages = useCallback(() => {
+    for (const r of referenceImages) {
+      if (r.previewUrl) URL.revokeObjectURL(r.previewUrl);
+    }
+    setReferenceImages([]);
+  }, [referenceImages]);
+
+  const removeReferenceImage = useCallback((id: string) => {
+    setReferenceImages((prev) => {
+      const next = prev.filter((r) => r.id !== id);
+      const removed = prev.find((r) => r.id === id);
+      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+      return next;
+    });
+  }, []);
 
   const downloadFromUrl = useCallback(async (url: string, filename: string) => {
     try {
@@ -121,26 +139,39 @@ export default function ImageStudioPage() {
   }, []);
 
   const handleReferenceFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = '';
-    if (!file || !file.type.startsWith('image/')) return;
-    if (referencePreviewUrl) URL.revokeObjectURL(referencePreviewUrl);
-    const url = URL.createObjectURL(file);
-    setReferencePreviewUrl(url);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-      setReferenceImageBase64(base64 || null);
-    };
-    reader.readAsDataURL(file);
-  }, [referencePreviewUrl]);
+    if (!files.length) return;
+    const valid = files.filter((f) => f.type.startsWith('image/')).slice(0, 14);
+    if (!valid.length) return;
+
+    valid.forEach((file) => {
+      const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const previewUrl = URL.createObjectURL(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+        if (!base64) return;
+        setReferenceImages((prev) => {
+          const capped = prev.slice(0, 13); // allow adding one more => max 14
+          return [
+            ...capped,
+            { id, base64, mimeType: file.type || 'image/png', previewUrl },
+          ].slice(0, 14);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }, []);
 
   useEffect(() => {
     return () => {
-      if (referencePreviewUrl) URL.revokeObjectURL(referencePreviewUrl);
+      for (const r of referenceImages) {
+        if (r.previewUrl) URL.revokeObjectURL(r.previewUrl);
+      }
     };
-  }, [referencePreviewUrl]);
+  }, [referenceImages]);
 
   const supportsReferenceImage =
     (activeTab !== 'meme' && (imageProvider === 'reve_ai' || imageProvider === 'nano_banana_2')) ||
@@ -226,13 +257,30 @@ export default function ImageStudioPage() {
     setMemelordResults([]);
     setRemixResults([]);
     try {
-      const res = await generateImageStudioImage({
-        prompt: prompt.trim(),
-        aspectRatio: '1:1',
-        mode: activeTab,
-        provider,
-        ...(referenceImageBase64 ? { referenceImageBase64 } : {}),
-      });
+      const refsPayload = referenceImages.length
+        ? { referenceImages: referenceImages.map((r) => ({ base64: r.base64, mimeType: r.mimeType })) }
+        : {};
+
+      const isNanoBanana = provider === 'nano_banana_2';
+      const useSession = isNanoBanana && nanoBananaSessionId;
+
+      const res = useSession
+        ? await sendNanoBananaSessionMessage({
+            sessionId: nanoBananaSessionId!,
+            prompt: prompt.trim(),
+            mode: activeTab,
+            aspectRatio: '1:1',
+            ...refsPayload,
+          })
+        : await generateImageStudioImage({
+            prompt: prompt.trim(),
+            aspectRatio: '1:1',
+            mode: activeTab,
+            provider,
+            nanoBananaModel,
+            nanoBananaResolution,
+            ...refsPayload,
+          });
       addItem({ url: res.url, format: 'image', prompt: prompt.trim().slice(0, 120) });
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
@@ -240,7 +288,7 @@ export default function ImageStudioPage() {
     } finally {
       setLoading(false);
     }
-  }, [prompt, activeTab, memeSource, imageProvider, referenceImageBase64, fetchIdeas, addItem]);
+  }, [prompt, activeTab, memeSource, imageProvider, referenceImages, nanoBananaModel, nanoBananaResolution, nanoBananaSessionId, fetchIdeas, addItem]);
 
   const captureImageAsBase64 = useCallback(async (url: string): Promise<string | null> => {
     try {
@@ -416,6 +464,71 @@ export default function ImageStudioPage() {
                   </button>
                 ))}
               </div>
+              {imageProvider === 'nano_banana_2' && (
+                <div style={{ marginTop: '0.625rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                      Model
+                    </p>
+                    <select
+                      value={nanoBananaModel}
+                      onChange={(e) => setNanoBananaModel(e.target.value as NanoBananaModel)}
+                      style={{ width: '100%', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.5rem', background: 'var(--bg-secondary)', color: 'var(--text)', fontSize: '0.8125rem' }}
+                    >
+                      <option value="gemini-3.1-flash-image-preview">Nano Banana 2</option>
+                      <option value="gemini-3-pro-image-preview">Nano Banana Pro Preview</option>
+                    </select>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                      Resolution
+                    </p>
+                    <select
+                      value={nanoBananaResolution}
+                      onChange={(e) => setNanoBananaResolution(e.target.value as NanoBananaResolution)}
+                      style={{ width: '100%', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.5rem', background: 'var(--bg-secondary)', color: 'var(--text)', fontSize: '0.8125rem' }}
+                    >
+                      <option value="1K">1K</option>
+                      <option value="2K">2K</option>
+                      <option value="4K">4K</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+              {imageProvider === 'nano_banana_2' && (
+                <div style={{ marginTop: '0.625rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (nanoBananaSessionId) {
+                        setNanoBananaSessionId(null);
+                        return;
+                      }
+                      try {
+                        const s = await createNanoBananaSession({ model: nanoBananaModel, resolution: nanoBananaResolution });
+                        setNanoBananaSessionId(s.sessionId);
+                      } catch (e: unknown) {
+                        const err = e as { response?: { data?: { error?: string } }; message?: string };
+                        setError(err?.response?.data?.error ?? err?.message ?? 'Failed to start Nano Banana session');
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem 0',
+                      border: `1px solid ${nanoBananaSessionId ? 'rgba(0,229,160,0.3)' : 'var(--border)'}`,
+                      borderRadius: '8px',
+                      background: nanoBananaSessionId ? 'rgba(0,229,160,0.08)' : 'transparent',
+                      color: nanoBananaSessionId ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                    title="Multi-turn session (keeps context across generates)"
+                  >
+                    {nanoBananaSessionId ? 'Reset Nano Session' : 'Start Nano Session'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -459,6 +572,71 @@ export default function ImageStudioPage() {
                   </button>
                 ))}
               </div>
+              {memeSource === 'nano_banana_2' && (
+                <div style={{ marginTop: '0.625rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                      Model
+                    </p>
+                    <select
+                      value={nanoBananaModel}
+                      onChange={(e) => setNanoBananaModel(e.target.value as NanoBananaModel)}
+                      style={{ width: '100%', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.5rem', background: 'var(--bg-secondary)', color: 'var(--text)', fontSize: '0.8125rem' }}
+                    >
+                      <option value="gemini-3.1-flash-image-preview">Nano Banana 2</option>
+                      <option value="gemini-3-pro-image-preview">Nano Banana Pro Preview</option>
+                    </select>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                      Resolution
+                    </p>
+                    <select
+                      value={nanoBananaResolution}
+                      onChange={(e) => setNanoBananaResolution(e.target.value as NanoBananaResolution)}
+                      style={{ width: '100%', borderRadius: '8px', border: '1px solid var(--border)', padding: '0.5rem', background: 'var(--bg-secondary)', color: 'var(--text)', fontSize: '0.8125rem' }}
+                    >
+                      <option value="1K">1K</option>
+                      <option value="2K">2K</option>
+                      <option value="4K">4K</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+              {memeSource === 'nano_banana_2' && (
+                <div style={{ marginTop: '0.625rem', display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (nanoBananaSessionId) {
+                        setNanoBananaSessionId(null);
+                        return;
+                      }
+                      try {
+                        const s = await createNanoBananaSession({ model: nanoBananaModel, resolution: nanoBananaResolution });
+                        setNanoBananaSessionId(s.sessionId);
+                      } catch (e: unknown) {
+                        const err = e as { response?: { data?: { error?: string } }; message?: string };
+                        setError(err?.response?.data?.error ?? err?.message ?? 'Failed to start Nano Banana session');
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem 0',
+                      border: `1px solid ${nanoBananaSessionId ? 'rgba(0,229,160,0.3)' : 'var(--border)'}`,
+                      borderRadius: '8px',
+                      background: nanoBananaSessionId ? 'rgba(0,229,160,0.08)' : 'transparent',
+                      color: nanoBananaSessionId ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                      fontSize: '0.8125rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                    title="Multi-turn session (keeps context across generates)"
+                  >
+                    {nanoBananaSessionId ? 'Reset Nano Session' : 'Start Nano Session'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -524,39 +702,58 @@ export default function ImageStudioPage() {
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={handleReferenceFile}
                       style={{ display: 'none' }}
                     />
                   </label>
-                  {referencePreviewUrl && (
-                    <>
-                      <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <img src={referencePreviewUrl} alt="Ref" style={{ width: 32, height: 32, borderRadius: '6px', objectFit: 'cover', display: 'block' }} />
-                        <button
-                          type="button"
-                          onClick={clearReferenceImage}
-                          style={{
-                            position: 'absolute',
-                            top: -4,
-                            right: -4,
-                            width: 16,
-                            height: 16,
-                            borderRadius: '50%',
-                            border: 'none',
-                            background: 'rgba(0,0,0,0.7)',
-                            color: '#fff',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 0,
-                          }}
-                          aria-label="Remove reference"
-                        >
-                          <X style={{ width: 10, height: 10 }} />
-                        </button>
-                      </div>
-                    </>
+                  {referenceImages.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: 2 }}>
+                      {referenceImages.map((r) => (
+                        <div key={r.id} style={{ position: 'relative', flexShrink: 0 }}>
+                          <img src={r.previewUrl} alt="Ref" style={{ width: 32, height: 32, borderRadius: '6px', objectFit: 'cover', display: 'block' }} />
+                          <button
+                            type="button"
+                            onClick={() => removeReferenceImage(r.id)}
+                            style={{
+                              position: 'absolute',
+                              top: -4,
+                              right: -4,
+                              width: 16,
+                              height: 16,
+                              borderRadius: '50%',
+                              border: 'none',
+                              background: 'rgba(0,0,0,0.7)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: 0,
+                            }}
+                            aria-label="Remove reference"
+                          >
+                            <X style={{ width: 10, height: 10 }} />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={clearReferenceImages}
+                        style={{
+                          border: '1px solid var(--border)',
+                          background: 'transparent',
+                          color: 'var(--text-secondary)',
+                          borderRadius: '8px',
+                          padding: '0 8px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                        }}
+                        title="Clear all references"
+                      >
+                        Clear
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -789,13 +986,20 @@ export default function ImageStudioPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.5rem 0.5rem', borderTop: '1px solid var(--border)' }}>
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '6px', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Attach reference image">
                     <Upload style={{ width: 16, height: 16 }} />
-                    <input type="file" accept="image/*" onChange={handleReferenceFile} style={{ display: 'none' }} />
+                    <input type="file" accept="image/*" multiple onChange={handleReferenceFile} style={{ display: 'none' }} />
                   </label>
-                  {referencePreviewUrl && (
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <img src={referencePreviewUrl} alt="Ref" style={{ width: 28, height: 28, borderRadius: '6px', objectFit: 'cover', display: 'block' }} />
-                      <button type="button" onClick={clearReferenceImage} style={{ position: 'absolute', top: -3, right: -3, width: 14, height: 14, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} aria-label="Remove reference">
-                        <X style={{ width: 8, height: 8 }} />
+                  {referenceImages.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.3rem', overflowX: 'auto', paddingBottom: 2 }}>
+                      {referenceImages.map((r) => (
+                        <div key={r.id} style={{ position: 'relative', flexShrink: 0 }}>
+                          <img src={r.previewUrl} alt="Ref" style={{ width: 28, height: 28, borderRadius: '6px', objectFit: 'cover', display: 'block' }} />
+                          <button type="button" onClick={() => removeReferenceImage(r.id)} style={{ position: 'absolute', top: -3, right: -3, width: 14, height: 14, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} aria-label="Remove reference">
+                            <X style={{ width: 8, height: 8 }} />
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={clearReferenceImages} style={{ border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', borderRadius: '6px', padding: '0 6px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                        Clear
                       </button>
                     </div>
                   )}
