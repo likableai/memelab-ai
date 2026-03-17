@@ -673,6 +673,34 @@ export interface GenerateVideoClipResponse {
   provider: 'kling' | 'veo';
 }
 
+export interface CreateVideoJobParams {
+  prompt: string;
+  provider?: 'veo' | 'kling';
+  fastMode?: boolean;
+  durationSeconds?: number;
+  aspectRatio?: string;
+  referenceUrl?: string;
+  style?: string;
+}
+
+export interface CreateVideoJobResponse {
+  jobId: string;
+  status: 'queued' | 'running' | 'succeeded' | 'failed';
+}
+
+export interface VideoJobStatusResponse {
+  jobId: string;
+  status: 'queued' | 'running' | 'succeeded' | 'failed';
+  provider: 'veo' | 'kling';
+  providerUsed?: 'veo' | 'kling';
+  fastMode?: boolean;
+  resultUrl?: string;
+  errorMessage?: string;
+  createdAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
 export interface UploadVideoReferenceImageResponse {
   url: string;
   filename: string;
@@ -686,6 +714,18 @@ export const uploadVideoReferenceImage = async (
   const response = await api.post<UploadVideoReferenceImageResponse>('/video/reference-image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return response.data;
+};
+
+export const createVideoJob = async (
+  payload: CreateVideoJobParams
+): Promise<CreateVideoJobResponse> => {
+  const response = await api.post<CreateVideoJobResponse>('/video/jobs', payload);
+  return response.data;
+};
+
+export const getVideoJob = async (jobId: string): Promise<VideoJobStatusResponse> => {
+  const response = await api.get<VideoJobStatusResponse>(`/video/jobs/${jobId}`);
   return response.data;
 };
 

@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { ImageUp, Loader2, Sparkles, Video } from 'lucide-react';
 import {
   resolveImageStudioFileUrl,
-  generateVideoClip,
+  createVideoJob,
+  getVideoJob,
   uploadVideoReferenceImage,
 } from '@/lib/api';
 
 export default function VideoStudioPage() {
   const [prompt, setPrompt] = useState('');
-  const [provider, setProvider] = useState<'kling' | 'veo'>('kling');
+  const [provider, setProvider] = useState<'kling' | 'veo'>('veo');
+  const [fastMode, setFastMode] = useState(true);
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '16:9' | '9:16'>('16:9');
   const [durationSeconds, setDurationSeconds] = useState<number>(8);
   const [style, setStyle] = useState<
@@ -21,32 +23,88 @@ export default function VideoStudioPage() {
   const [uploadingRef, setUploadingRef] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<'queued' | 'running' | 'succeeded' | 'failed' | null>(null);
+  const [jobStartedAt, setJobStartedAt] = useState<number | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultProvider, setResultProvider] = useState<'kling' | 'veo' | null>(null);
 
   const canGenerate = useMemo(() => prompt.trim().length > 0 && !loading, [prompt, loading]);
+
+  useEffect(() => {
+    if (!jobId) return;
+
+    let cancelled = false;
+    const pollEveryMs = 2000;
+    const uiWaitCapMs = 5 * 60 * 1000;
+    const startedAt = jobStartedAt ?? Date.now();
+    if (!jobStartedAt) setJobStartedAt(startedAt);
+
+    const tick = async () => {
+      if (cancelled) return;
+      // Stop polling after 5 minutes to avoid “blocking forever” UX.
+      if (Date.now() - startedAt > uiWaitCapMs) {
+        setLoading(false);
+        setError('This is taking longer than 5 minutes. The job may still finish—try again later or regenerate.');
+        return;
+      }
+
+      try {
+        const s = await getVideoJob(jobId);
+        if (cancelled) return;
+        setJobStatus(s.status);
+        if (s.status === 'succeeded' && s.resultUrl) {
+          setResultUrl(s.resultUrl);
+          setResultProvider((s.providerUsed as 'kling' | 'veo') || (s.provider as 'kling' | 'veo'));
+          setLoading(false);
+          return;
+        }
+        if (s.status === 'failed') {
+          setLoading(false);
+          setError(s.errorMessage || 'Video job failed');
+          return;
+        }
+      } catch {
+        // keep polling; transient errors happen during dev/restarts
+      }
+
+      if (!cancelled) setTimeout(tick, pollEveryMs);
+    };
+
+    setTimeout(tick, 300);
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId, jobStartedAt]);
 
   const handleGenerate = async () => {
     const text = prompt.trim();
     if (!text) return;
     setLoading(true);
     setError(null);
+    setResultUrl(null);
+    setResultProvider(null);
+    setJobId(null);
+    setJobStatus(null);
+    setJobStartedAt(null);
     try {
-      const res = await generateVideoClip({
+      const res = await createVideoJob({
         prompt: text,
-        provider,
+        provider: provider === 'kling' ? 'kling' : 'veo',
+        fastMode,
         durationSeconds,
         aspectRatio,
         referenceUrl: referenceUrl.trim() || undefined,
         style: style || undefined,
       });
-      setResultUrl(res.url);
-      setResultProvider(res.provider);
+      setJobId(res.jobId);
+      setJobStatus(res.status);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } }; message?: string };
       setError(err?.response?.data?.error ?? err?.message ?? 'Failed to generate video');
-    } finally {
       setLoading(false);
+    } finally {
+      // loading ends when job finishes or UI wait cap triggers
     }
   };
 
@@ -192,6 +250,31 @@ export default function VideoStudioPage() {
                   <option value="1:1">1:1</option>
                 </select>
               </div>
+            </div>
+
+            <div style={{ marginTop: 'var(--space-3)' }}>
+              <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                Speed / quality
+              </label>
+              <select
+                value={fastMode ? 'fast' : 'quality'}
+                onChange={(e) => setFastMode(e.target.value === 'fast')}
+                style={{
+                  width: '100%',
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-tertiary)',
+                  padding: '10px 12px',
+                  fontSize: 'var(--font-sm)',
+                  color: 'var(--text)',
+                }}
+              >
+                <option value="fast">Fast (recommended)</option>
+                <option value="quality">Quality</option>
+              </select>
+              <p style={{ marginTop: 6, fontSize: '11px', color: 'var(--text-secondary)' }}>
+                Fast mode uses Veo 3.1 Fast when provider is Veo, and Kling std mode when provider is Kling.
+              </p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
