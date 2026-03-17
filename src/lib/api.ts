@@ -680,7 +680,13 @@ export interface CreateVideoJobParams {
   durationSeconds?: number;
   aspectRatio?: string;
   referenceUrl?: string;
+  referenceUrls?: string[];
   style?: string;
+  ownerId?: string;
+  klingRoute?: 'text2video' | 'image2video' | 'multi-image2video' | 'omni-video';
+  klingMultiShot?: boolean;
+  klingShotType?: 'customize' | 'intelligence';
+  klingMultiPrompt?: Array<{ index: number; prompt: string; duration: string }>;
 }
 
 export interface CreateVideoJobResponse {
@@ -696,9 +702,23 @@ export interface VideoJobStatusResponse {
   fastMode?: boolean;
   resultUrl?: string;
   errorMessage?: string;
+  ownerId?: string;
   createdAt?: string;
   startedAt?: string;
   completedAt?: string;
+}
+
+export interface ListVideoJobsResponse {
+  jobs: Array<{
+    jobId: string;
+    status: 'succeeded';
+    provider: 'veo' | 'kling';
+    providerUsed?: 'veo' | 'kling';
+    fastMode?: boolean;
+    resultUrl: string;
+    prompt?: string;
+    createdAt?: string;
+  }>;
 }
 
 export interface UploadVideoReferenceImageResponse {
@@ -726,6 +746,16 @@ export const createVideoJob = async (
 
 export const getVideoJob = async (jobId: string): Promise<VideoJobStatusResponse> => {
   const response = await api.get<VideoJobStatusResponse>(`/video/jobs/${jobId}`);
+  return response.data;
+};
+
+export const listVideoJobs = async (
+  ownerId: string,
+  limit = 50
+): Promise<ListVideoJobsResponse> => {
+  const response = await api.get<ListVideoJobsResponse>('/video/jobs', {
+    params: { ownerId, limit },
+  });
   return response.data;
 };
 

@@ -7,21 +7,32 @@ import {
   resolveImageStudioFileUrl,
   createVideoJob,
   getVideoJob,
+  listVideoJobs,
   uploadVideoReferenceImage,
 } from '@/lib/api';
-import { useStudioHistory } from '@/hooks/useStudioHistory';
 import { useEvmWallet } from '@/components/WalletProvider';
 
 export default function VideoStudioPage() {
   const [prompt, setPrompt] = useState('');
   const [provider, setProvider] = useState<'kling' | 'veo'>('veo');
   const [fastMode, setFastMode] = useState(true);
+  const [klingRoute, setKlingRoute] = useState<'image2video' | 'text2video' | 'multi-image2video' | 'omni-video'>(
+    'image2video'
+  );
+  const [klingAdvancedOpen, setKlingAdvancedOpen] = useState(false);
+  const [klingMultiShot, setKlingMultiShot] = useState(false);
+  const [klingShotType, setKlingShotType] = useState<'customize' | 'intelligence'>('customize');
+  const [klingShots, setKlingShots] = useState<Array<{ index: number; prompt: string; duration: number }>>([
+    { index: 1, prompt: '', duration: 2 },
+    { index: 2, prompt: '', duration: 3 },
+  ]);
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '16:9' | '9:16'>('16:9');
   const [durationSeconds, setDurationSeconds] = useState<number>(8);
   const [style, setStyle] = useState<
     '' | 'cinematic' | 'studio_ghibli' | 'anime_cinematic' | 'hyperreal_gritty'
   >('');
   const [referenceUrl, setReferenceUrl] = useState('');
+  const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [uploadingRef, setUploadingRef] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,19 +43,56 @@ export default function VideoStudioPage() {
   const [resultProvider, setResultProvider] = useState<'kling' | 'veo' | null>(null);
 
   const { address } = useEvmWallet();
-  const { history, selectedItem, addItem, selectItem, clearHistory } = useStudioHistory({
-    studio: 'video',
-    walletAddress: address ?? null,
-  });
+  const [history, setHistory] = useState<
+    Array<{ jobId: string; resultUrl: string; prompt?: string; createdAt?: string; providerUsed?: string }>
+  >([]);
+  const [historySelectedJobId, setHistorySelectedJobId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selectedItem?.url) {
-      setResultUrl(selectedItem.url);
-      setResultProvider((selectedItem.format as 'kling' | 'veo') || null);
-      if (selectedItem.prompt) setPrompt(selectedItem.prompt);
+    const ownerId = (address || '').trim().toLowerCase();
+    if (!ownerId) {
+      setHistory([]);
+      setHistorySelectedJobId(null);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedItem?.id]);
+    let cancelled = false;
+    listVideoJobs(ownerId, 50)
+      .then((res) => {
+        if (cancelled) return;
+        const jobs = (res.jobs || []).map((j) => ({
+          jobId: j.jobId,
+          resultUrl: j.resultUrl,
+          prompt: j.prompt,
+          createdAt: j.createdAt,
+          providerUsed: j.providerUsed || j.provider,
+        }));
+        setHistory(jobs);
+        setHistorySelectedJobId((prev) => prev || jobs[0]?.jobId || null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHistory([]);
+          setHistorySelectedJobId(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [address]);
+
+  const clearHistory = () => {
+    // Server-side delete endpoint can be added later. For now, clear local view.
+    setHistory([]);
+    setHistorySelectedJobId(null);
+  };
+
+  const selectedHistoryItem = history.find((h) => h.jobId === historySelectedJobId) || null;
+  useEffect(() => {
+    if (!selectedHistoryItem) return;
+    setResultUrl(selectedHistoryItem.resultUrl);
+    setResultProvider((selectedHistoryItem.providerUsed as 'kling' | 'veo') || null);
+    if (selectedHistoryItem.prompt) setPrompt(selectedHistoryItem.prompt);
+  }, [selectedHistoryItem?.jobId]);
 
   const canGenerate = useMemo(() => prompt.trim().length > 0 && !loading, [prompt, loading]);
 
@@ -73,11 +121,22 @@ export default function VideoStudioPage() {
         if (s.status === 'succeeded' && s.resultUrl) {
           setResultUrl(s.resultUrl);
           setResultProvider((s.providerUsed as 'kling' | 'veo') || (s.provider as 'kling' | 'veo'));
-          addItem({
-            url: s.resultUrl,
-            format: (s.providerUsed || s.provider) as string,
-            prompt: prompt.trim().slice(0, 180),
-          });
+          const ownerId = (address || '').trim().toLowerCase();
+          if (ownerId) {
+            listVideoJobs(ownerId, 50)
+              .then((res) => {
+                const jobs = (res.jobs || []).map((j) => ({
+                  jobId: j.jobId,
+                  resultUrl: j.resultUrl,
+                  prompt: j.prompt,
+                  createdAt: j.createdAt,
+                  providerUsed: j.providerUsed || j.provider,
+                }));
+                setHistory(jobs);
+                setHistorySelectedJobId((prev) => prev || jobs[0]?.jobId || null);
+              })
+              .catch(() => {});
+          }
           setLoading(false);
           return;
         }
@@ -110,6 +169,33 @@ export default function VideoStudioPage() {
     setJobStatus(null);
     setJobStartedAt(null);
     try {
+      const klingMultiPrompt =
+        provider === 'kling' && klingMultiShot
+          ? klingShots
+              .slice(0, 6)
+              .map((s, i) => ({
+                index: i + 1,
+                prompt: (s.prompt || '').trim(),
+                duration: String(Math.max(1, Math.min(15, Math.floor(s.duration || 1)))),
+              }))
+              .filter((s) => s.prompt.length > 0)
+          : undefined;
+
+      if (provider === 'kling' && klingMultiShot) {
+        const total = (klingMultiPrompt || []).reduce((acc, s) => acc + (parseInt(s.duration, 10) || 0), 0);
+        const target = durationSeconds <= 5 ? 5 : durationSeconds <= 10 ? 10 : 15;
+        if (!klingMultiPrompt?.length) {
+          setError('Add at least one storyboard shot prompt (Advanced → Multi-shot).');
+          setLoading(false);
+          return;
+        }
+        if (total !== target) {
+          setError(`Storyboard durations must add up to ${target}s (currently ${total}s).`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const res = await createVideoJob({
         prompt: text,
         provider: provider === 'kling' ? 'kling' : 'veo',
@@ -117,7 +203,13 @@ export default function VideoStudioPage() {
         durationSeconds,
         aspectRatio,
         referenceUrl: referenceUrl.trim() || undefined,
+        referenceUrls: referenceUrls.length ? referenceUrls : undefined,
         style: style || undefined,
+        ownerId: (address || '').trim().toLowerCase() || undefined,
+        klingRoute: provider === 'kling' ? klingRoute : undefined,
+        klingMultiShot: provider === 'kling' ? klingMultiShot : undefined,
+        klingShotType: provider === 'kling' && klingMultiShot ? klingShotType : undefined,
+        klingMultiPrompt: provider === 'kling' && klingMultiShot ? (klingMultiPrompt as any) : undefined,
       });
       setJobId(res.jobId);
       setJobStatus(res.status);
@@ -203,15 +295,24 @@ export default function VideoStudioPage() {
                   accept="image/*"
                   style={{ display: 'none' }}
                   disabled={uploadingRef}
+                  multiple={provider === 'kling' && klingRoute === 'multi-image2video'}
                   onChange={async (e) => {
-                    const file = e.target.files?.[0];
+                    const files = Array.from(e.target.files || []);
                     e.target.value = '';
-                    if (!file) return;
+                    if (!files.length) return;
                     setUploadingRef(true);
                     setError(null);
                     try {
-                      const uploaded = await uploadVideoReferenceImage(file);
-                      setReferenceUrl(uploaded.url);
+                      const uploadedUrls: string[] = [];
+                      for (const f of files) {
+                        const uploaded = await uploadVideoReferenceImage(f);
+                        uploadedUrls.push(uploaded.url);
+                      }
+                      const primary = uploadedUrls[0];
+                      if (primary) setReferenceUrl(primary);
+                      if (uploadedUrls.length) {
+                        setReferenceUrls((prev) => Array.from(new Set([...prev, ...uploadedUrls])));
+                      }
                     } catch (err: unknown) {
                       const ex = err as { response?: { data?: { error?: string } }; message?: string };
                       setError(ex?.response?.data?.error ?? ex?.message ?? 'Failed to upload reference image');
@@ -273,6 +374,224 @@ export default function VideoStudioPage() {
                 </select>
               </div>
             </div>
+
+            {provider === 'kling' && (
+              <div style={{ marginTop: 'var(--space-3)' }}>
+                <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Kling generation route
+                </label>
+                <select
+                  value={klingRoute}
+                  onChange={(e) =>
+                    setKlingRoute(
+                      e.target.value as 'image2video' | 'text2video' | 'multi-image2video' | 'omni-video'
+                    )
+                  }
+                  style={{
+                    width: '100%',
+                    borderRadius: 10,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-tertiary)',
+                    padding: '10px 12px',
+                    fontSize: 'var(--font-sm)',
+                    color: 'var(--text)',
+                  }}
+                >
+                  <option value="text2video">Text to Video (text2video)</option>
+                  <option value="image2video">Image to Video (image2video)</option>
+                  <option value="multi-image2video">Multi-Image to Video (multi-image2video)</option>
+                  <option value="omni-video">Omni Video (omni-video)</option>
+                </select>
+                <p style={{ marginTop: 6, fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  Tip: for best reliability use <b>image2video</b> (upload image). Omni-video requires publicly reachable image URLs.
+                </p>
+              </div>
+            )}
+
+            {provider === 'kling' && (
+              <div style={{ marginTop: 'var(--space-3)' }}>
+                <button
+                  type="button"
+                  onClick={() => setKlingAdvancedOpen((v) => !v)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    borderRadius: 12,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-tertiary)',
+                    padding: '10px 12px',
+                    fontSize: 'var(--font-sm)',
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                  }}
+                >
+                  Advanced {klingAdvancedOpen ? '▾' : '▸'}
+                </button>
+
+                {klingAdvancedOpen && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      borderRadius: 12,
+                      border: '1px solid var(--border)',
+                      background: 'rgba(2,6,23,0.25)',
+                      padding: 'var(--space-4)',
+                    }}
+                  >
+                    <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={klingMultiShot}
+                        onChange={(e) => setKlingMultiShot(e.target.checked)}
+                      />
+                      <span style={{ fontSize: 'var(--font-sm)', fontWeight: 700 }}>Enable multi-shot storyboard</span>
+                    </label>
+
+                    {klingMultiShot && (
+                      <>
+                        <div style={{ marginTop: 12 }}>
+                          <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                            Storyboard type
+                          </label>
+                          <select
+                            value={klingShotType}
+                            onChange={(e) => setKlingShotType(e.target.value as 'customize' | 'intelligence')}
+                            style={{
+                              width: '100%',
+                              borderRadius: 10,
+                              border: '1px solid var(--border)',
+                              background: 'var(--bg-tertiary)',
+                              padding: '10px 12px',
+                              fontSize: 'var(--font-sm)',
+                              color: 'var(--text)',
+                            }}
+                          >
+                            <option value="customize">Customize (manual shots)</option>
+                            <option value="intelligence">Intelligence (model-assisted)</option>
+                          </select>
+                        </div>
+
+                        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                          <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            Shots: up to 6. Total duration must equal {durationSeconds <= 5 ? 5 : durationSeconds <= 10 ? 10 : 15}s.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setKlingShots((prev) => {
+                                if (prev.length >= 6) return prev;
+                                const next = [...prev, { index: prev.length + 1, prompt: '', duration: 1 }];
+                                return next.map((s, i) => ({ ...s, index: i + 1 }));
+                              })
+                            }
+                            style={{
+                              borderRadius: 999,
+                              border: '1px solid var(--border)',
+                              background: 'transparent',
+                              color: 'var(--text)',
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            + Add shot
+                          </button>
+                        </div>
+
+                        <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
+                          {klingShots.slice(0, 6).map((shot, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                borderRadius: 12,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg-tertiary)',
+                                padding: 10,
+                              }}
+                            >
+                              <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+                                <p style={{ margin: 0, fontSize: 12, fontWeight: 800 }}>Shot {idx + 1}</p>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setKlingShots((prev) => {
+                                      if (prev.length <= 1) return prev;
+                                      const next = prev.filter((_, i) => i !== idx);
+                                      return next.map((s, i) => ({ ...s, index: i + 1 }));
+                                    })
+                                  }
+                                  style={{
+                                    borderRadius: 999,
+                                    border: '1px solid var(--border)',
+                                    background: 'transparent',
+                                    color: 'var(--text-secondary)',
+                                    padding: '4px 8px',
+                                    fontSize: '12px',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+
+                              <textarea
+                                value={shot.prompt}
+                                onChange={(e) =>
+                                  setKlingShots((prev) =>
+                                    prev.map((s, i) => (i === idx ? { ...s, prompt: e.target.value } : s))
+                                  )
+                                }
+                                placeholder="Describe this shot..."
+                                rows={3}
+                                style={{
+                                  width: '100%',
+                                  resize: 'vertical',
+                                  borderRadius: 10,
+                                  border: '1px solid var(--border)',
+                                  background: 'rgba(2,6,23,0.35)',
+                                  padding: '8px 10px',
+                                  fontSize: 'var(--font-sm)',
+                                  color: 'var(--text)',
+                                  marginTop: 8,
+                                }}
+                              />
+
+                              <div style={{ marginTop: 8 }}>
+                                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                                  Duration (seconds)
+                                </label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={15}
+                                  value={shot.duration}
+                                  onChange={(e) =>
+                                    setKlingShots((prev) =>
+                                      prev.map((s, i) =>
+                                        i === idx ? { ...s, duration: parseInt(e.target.value || '1', 10) } : s
+                                      )
+                                    )
+                                  }
+                                  style={{
+                                    width: '100%',
+                                    borderRadius: 10,
+                                    border: '1px solid var(--border)',
+                                    background: 'rgba(2,6,23,0.35)',
+                                    padding: '8px 10px',
+                                    fontSize: 'var(--font-sm)',
+                                    color: 'var(--text)',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ marginTop: 'var(--space-3)' }}>
               <label style={{ display: 'block', fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginBottom: 6 }}>
@@ -345,6 +664,11 @@ export default function VideoStudioPage() {
                   {' '}
                   {provider === 'kling' ? 'Kling needs external URLs.' : 'Veo can use uploaded or internal URLs.'}
                 </p>
+                {referenceUrls.length > 0 && (
+                  <p style={{ marginTop: 6, fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    Attached images: <span style={{ color: 'var(--text)' }}>{referenceUrls.length}</span>
+                  </p>
+                )}
               </div>
             </div>
 
@@ -512,17 +836,17 @@ export default function VideoStudioPage() {
               </div>
               {history.length === 0 ? (
                 <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>
-                  No history yet. Generate a clip to save it here.
+                  {address ? 'No history yet. Generate a clip to save it here.' : 'Connect a wallet to see your history.'}
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 220, overflow: 'auto' }}>
                   {history.map((h) => {
-                    const active = selectedItem?.id === h.id;
+                    const active = historySelectedJobId === h.jobId;
                     return (
                       <button
-                        key={h.id}
+                        key={h.jobId}
                         type="button"
-                        onClick={() => selectItem(h.id)}
+                        onClick={() => setHistorySelectedJobId(h.jobId)}
                         style={{
                           textAlign: 'left',
                           borderRadius: 10,
@@ -533,7 +857,7 @@ export default function VideoStudioPage() {
                         }}
                       >
                         <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                          {new Date(h.createdAt).toLocaleString()}
+                          {h.createdAt ? new Date(h.createdAt).toLocaleString() : ''}
                         </div>
                         <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text)' }}>
                           {(h.prompt || 'Video clip').slice(0, 80)}
