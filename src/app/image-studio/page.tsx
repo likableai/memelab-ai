@@ -96,6 +96,30 @@ export default function ImageStudioPage() {
     setReferenceImageBase64(null);
   }, [referencePreviewUrl]);
 
+  const downloadFromUrl = useCallback(async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Fallback: still allow the user to get the file even if blob download fails (CORS, etc.)
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  }, []);
+
   const handleReferenceFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -864,11 +888,9 @@ export default function ImageStudioPage() {
                       {selectedImageBase64 ? 'Selected for Remix' : 'Use for Remix'}
                     </button>
                   )}
-                  <a
-                    href={resolvedGeneratedUrl}
-                    download="image-studio.png"
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => downloadFromUrl(resolvedGeneratedUrl, 'image-studio.png')}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
                       padding: '0.375rem 0.75rem',
@@ -877,11 +899,12 @@ export default function ImageStudioPage() {
                       background: 'transparent',
                       color: 'var(--text)',
                       fontSize: '0.8125rem', fontWeight: 600, textDecoration: 'none',
+                      cursor: 'pointer',
                     }}
                   >
                     <Download style={{ width: 13, height: 13 }} />
                     Download
-                  </a>
+                  </button>
                 </div>
               </div>
               <img
@@ -911,16 +934,14 @@ export default function ImageStudioPage() {
                         {r.template_name}
                       </span>
                     )}
-                    <a
-                      href={r.url}
-                      download={`memelord-${i}.png`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}
+                    <button
+                      type="button"
+                      onClick={() => downloadFromUrl(r.url, `memelord-${i}.png`)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                     >
                       <Download style={{ width: 11, height: 11 }} />
                       Download
-                    </a>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1049,10 +1070,13 @@ export default function ImageStudioPage() {
                   return (
                     <div key={r.patternId} style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                       <img src={resolved} alt={r.patternId} style={{ borderRadius: '9px', width: '100%', aspectRatio: '1', objectFit: 'cover', border: '1px solid var(--border)' }} />
-                      <a href={resolved} download={`${r.patternId}.png`} target="_blank" rel="noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}>
+                      <button
+                        type="button"
+                        onClick={() => downloadFromUrl(resolved, `${r.patternId}.png`)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                      >
                         <Download style={{ width: 11, height: 11 }} /> Download
-                      </a>
+                      </button>
                     </div>
                   );
                 })}
